@@ -1,0 +1,40 @@
+# Environment
+.env
+*.env
+
+# Output images (keep .gitkeep)
+output/*.png
+output/*.jpg
+output/*.jpeg
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Playwright
+playwright-report/
+test-results/

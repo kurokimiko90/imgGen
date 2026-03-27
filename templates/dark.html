@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1080" />
+  <title>{{ title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-primary: #050508;
+      --bg-secondary: #0d0d14;
+      --bg-card: rgba(255, 255, 255, 0.04);
+      --bg-card-hover: rgba(255, 255, 255, 0.07);
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.4);
+      --accent-secondary: #8b5cf6;
+      --text-primary: #f1f0f8;
+      --text-secondary: rgba(241, 240, 248, 0.55);
+      --text-muted: rgba(241, 240, 248, 0.35);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(99, 102, 241, 0.5);
+      --width: 1080px;
+      --height: 1920px;
+    }
+
+    html, body {
+      width: var(--width);
+      height: var(--height);
+      overflow: hidden;
+    }
+
+    body {
+      font-family: 'Inter', 'Noto Sans TC', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      position: relative;
+    }
+
+    /* === BACKGROUND LAYERS === */
+    .bg-noise {
+      position: fixed;
+      inset: 0;
+      opacity: 0.03;
+      background-image:
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .bg-glow-top {
+      position: fixed;
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 900px;
+      height: 600px;
+      background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.18) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .bg-glow-bottom {
+      position: fixed;
+      bottom: -150px;
+      right: -100px;
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(ellipse at center, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+      background-size: 80px 80px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* === MAIN LAYOUT === */
+    .container {
+      position: relative;
+      z-index: 1;
+      width: var(--width);
+      height: var(--height);
+      display: flex;
+      flex-direction: column;
+      padding: 72px 80px 60px;
+    }
+
+    /* === HEADER === */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 64px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 0 24px var(--accent-glow);
+    }
+
+    .brand-text {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+
+    .header-badge {
+      padding: 8px 20px;
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      background: var(--bg-card);
+    }
+
+    /* === DECORATIVE TOP RULE === */
+    .top-rule {
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        var(--accent) 20%,
+        rgba(139, 92, 246, 0.6) 60%,
+        transparent 100%
+      );
+      margin-bottom: 64px;
+      position: relative;
+    }
+
+    .top-rule::before {
+      content: '';
+      position: absolute;
+      left: 20%;
+      top: -3px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 12px var(--accent);
+    }
+
+    /* === TITLE SECTION === */
+    .title-section {
+      margin-bottom: 72px;
+    }
+
+    .label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 28px;
+    }
+
+    .label::before {
+      content: '';
+      display: block;
+      width: 24px;
+      height: 2px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    .title {
+      font-size: 78px;
+      font-weight: 900;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg,
+        #ffffff 0%,
+        #e8e6ff 40%,
+        #c4b5fd 75%,
+        #a78bfa 100%
+      );
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      word-break: break-all;
+      overflow-wrap: break-word;
+    }
+
+    /* === KEY POINTS === */
+    .points-label {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+
+    .points-label-text {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .points-label-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .points-list {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      flex: 1;
+    }
+
+    .point-card {
+      display: flex;
+      align-items: stretch;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 16px;
+      overflow: hidden;
+      padding: 0;
+      position: relative;
+      transition: all 0.2s;
+    }
+
+    .point-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(99,102,241,0.06) 0%, transparent 60%);
+      border-radius: inherit;
+      pointer-events: none;
+    }
+
+    .point-number {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      min-width: 64px;
+      padding: 32px 0;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      border-right: 1px solid var(--border);
+      background: rgba(99, 102, 241, 0.05);
+    }
+
+    .point-emoji {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 80px;
+      min-width: 80px;
+      padding: 32px 0;
+      font-size: 36px;
+      border-right: 1px solid var(--border);
+    }
+
+    .point-text {
+      flex: 1;
+      padding: 32px 36px;
+      font-size: 27px;
+      font-weight: 400;
+      line-height: 1.65;
+      color: var(--text-primary);
+      letter-spacing: 0.01em;
+    }
+
+    /* === FOOTER === */
+    .footer {
+      margin-top: auto;
+      padding-top: 48px;
+    }
+
+    .footer-rule {
+      width: 100%;
+      height: 1px;
+      background: var(--border);
+      margin-bottom: 36px;
+      position: relative;
+    }
+
+    .footer-rule::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 120px;
+      height: 1px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+    }
+
+    .footer-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-source {
+      font-size: 15px;
+      color: var(--text-muted);
+      font-weight: 400;
+      max-width: 600px;
+    }
+
+    .footer-source strong {
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .footer-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+
+    .footer-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-noise"></div>
+  <div class="bg-glow-top"></div>
+  <div class="bg-glow-bottom"></div>
+  <div class="bg-grid"></div>
+
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="brand">
+        <div class="brand-icon">✦</div>
+        <span class="brand-text">AI 文章摘要</span>
+      </div>
+      <div class="header-badge">KEY INSIGHTS</div>
+    </div>
+
+    <!-- Decorative rule -->
+    <div class="top-rule"></div>
+
+    <!-- Title Section -->
+    <div class="title-section">
+      <div class="label">核心要點</div>
+      <h1 class="title">{{ title }}</h1>
+    </div>
+
+    <!-- Key Points -->
+    <div class="points-label">
+      <span class="points-label-text">重點摘要</span>
+      <div class="points-label-line"></div>
+    </div>
+
+    <div class="points-list">
+      {% for point in key_points %}
+      <div class="point-card">
+        <div class="point-number">0{{ loop.index }}</div>
+        <div class="point-emoji">{{ point.emoji }}</div>
+        <div class="point-text">{{ point.text }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-rule"></div>
+      <div class="footer-content">
+        <div class="footer-source">
+          {% if source %}
+          <strong>來源：</strong>{{ source }}
+          {% else %}
+          <strong>AI 智能摘要</strong> · 由 Claude 生成
+          {% endif %}
+        </div>
+        <div class="footer-meta">
+          <div class="footer-dot"></div>
+          <span>POWERED BY CLAUDE</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

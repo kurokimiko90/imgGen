@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1080" />
+  <title>{{ title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --grad-1: #4f1d96;
+      --grad-2: #3730a3;
+      --grad-3: #1e40af;
+      --grad-4: #0369a1;
+      --glass-bg: rgba(255, 255, 255, 0.10);
+      --glass-border: rgba(255, 255, 255, 0.18);
+      --glass-bg-strong: rgba(255, 255, 255, 0.15);
+      --text-white: #ffffff;
+      --text-soft: rgba(255, 255, 255, 0.85);
+      --text-faint: rgba(255, 255, 255, 0.55);
+      --accent-bright: #e879f9;
+      --accent-warm: #f0abfc;
+      --accent-yellow: #fde047;
+      --width: 1080px;
+      --height: 1920px;
+    }
+
+    html, body {
+      width: var(--width);
+      height: var(--height);
+      overflow: hidden;
+    }
+
+    body {
+      font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
+      position: relative;
+    }
+
+    /* === GRADIENT BACKGROUND === */
+    .bg-gradient {
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(
+          145deg,
+          #3b0764 0%,
+          #4c1d95 12%,
+          #3730a3 28%,
+          #1e3a8a 48%,
+          #1e40af 62%,
+          #0369a1 78%,
+          #075985 92%,
+          #0c4a6e 100%
+        );
+      z-index: 0;
+    }
+
+    /* Overlay mesh gradient for depth */
+    .bg-mesh {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 20%, rgba(192, 38, 211, 0.35) 0%, transparent 45%),
+        radial-gradient(ellipse at 80% 10%, rgba(99, 102, 241, 0.3) 0%, transparent 40%),
+        radial-gradient(ellipse at 10% 80%, rgba(6, 182, 212, 0.2) 0%, transparent 40%),
+        radial-gradient(ellipse at 90% 90%, rgba(139, 92, 246, 0.3) 0%, transparent 45%);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Sparkle dots */
+    .bg-sparkles {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .sparkle {
+      position: absolute;
+      border-radius: 50%;
+      background: white;
+    }
+
+    /* === MAIN LAYOUT === */
+    .container {
+      position: relative;
+      z-index: 1;
+      width: var(--width);
+      height: var(--height);
+      display: flex;
+      flex-direction: column;
+      padding: 64px 72px 56px;
+    }
+
+    /* === HEADER === */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 56px;
+    }
+
+    .brand-pill {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 24px 12px 14px;
+      background: var(--glass-bg-strong);
+      border: 1px solid var(--glass-border);
+      border-radius: 100px;
+      backdrop-filter: blur(12px);
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-bright), #a78bfa);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .brand-label {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-white);
+      letter-spacing: 0.04em;
+    }
+
+    .header-chips {
+      display: flex;
+      gap: 10px;
+    }
+
+    .chip {
+      padding: 8px 18px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-soft);
+      letter-spacing: 0.08em;
+      backdrop-filter: blur(8px);
+    }
+
+    /* === HERO SECTION === */
+    .hero {
+      margin-bottom: 56px;
+    }
+
+    .hero-eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .eyebrow-line {
+      width: 40px;
+      height: 2px;
+      background: var(--accent-bright);
+      border-radius: 2px;
+    }
+
+    .eyebrow-text {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent-warm);
+    }
+
+    .title {
+      font-size: 82px;
+      font-weight: 900;
+      line-height: 1.07;
+      letter-spacing: -0.025em;
+      color: var(--text-white);
+      text-shadow: 0 2px 32px rgba(0,0,0,0.3);
+      word-break: break-all;
+      overflow-wrap: break-word;
+    }
+
+    /* === POINTS SECTION === */
+    .points-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .points-header-text {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+    }
+
+    .points-header-line {
+      flex: 1;
+      height: 1px;
+      background: rgba(255,255,255,0.15);
+    }
+
+    .points-list {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      flex: 1;
+    }
+
+    .point-card {
+      display: flex;
+      align-items: center;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+      position: relative;
+    }
+
+    .point-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        135deg,
+        rgba(255,255,255,0.06) 0%,
+        transparent 50%
+      );
+      border-radius: inherit;
+      pointer-events: none;
+    }
+
+    .point-num-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 72px;
+      min-width: 72px;
+      padding: 30px 0;
+      gap: 6px;
+      border-right: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .point-num {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--accent-bright);
+      letter-spacing: 0.1em;
+    }
+
+    .point-num-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.3);
+    }
+
+    .point-emoji-col {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 90px;
+      min-width: 90px;
+      padding: 30px 0;
+      font-size: 40px;
+      border-right: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .point-text {
+      flex: 1;
+      padding: 30px 36px;
+      font-size: 27px;
+      font-weight: 400;
+      line-height: 1.65;
+      color: var(--text-soft);
+      letter-spacing: 0.01em;
+    }
+
+    /* === STATS ROW (decorative) === */
+    .stats-row {
+      display: flex;
+      gap: 16px;
+      margin-top: 28px;
+    }
+
+    .stat-box {
+      flex: 1;
+      padding: 20px 24px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text-white);
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-faint);
+      letter-spacing: 0.06em;
+    }
+
+    /* === FOOTER === */
+    .footer {
+      margin-top: auto;
+      padding-top: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-rule-wrap {
+      position: relative;
+      width: 100%;
+      margin-bottom: 28px;
+    }
+
+    .footer-rule {
+      width: 100%;
+      height: 1px;
+      background: rgba(255,255,255,0.12);
+    }
+
+    .footer-rule::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 140px;
+      height: 1px;
+      background: linear-gradient(90deg, var(--accent-bright), transparent);
+    }
+
+    .footer-source {
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--text-faint);
+    }
+
+    .footer-source strong {
+      color: var(--text-soft);
+      font-weight: 600;
+    }
+
+    .footer-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 100px;
+      backdrop-filter: blur(8px);
+    }
+
+    .footer-badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-bright);
+      box-shadow: 0 0 8px var(--accent-bright);
+    }
+
+    .footer-badge-text {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--text-soft);
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-gradient"></div>
+  <div class="bg-mesh"></div>
+
+  <!-- Static sparkle dots for visual richness -->
+  <div class="bg-sparkles">
+    <div class="sparkle" style="width:3px;height:3px;top:8%;left:12%;opacity:0.6;"></div>
+    <div class="sparkle" style="width:2px;height:2px;top:15%;left:88%;opacity:0.4;"></div>
+    <div class="sparkle" style="width:4px;height:4px;top:25%;left:5%;opacity:0.5;"></div>
+    <div class="sparkle" style="width:2px;height:2px;top:35%;left:95%;opacity:0.45;"></div>
+    <div class="sparkle" style="width:3px;height:3px;top:50%;left:3%;opacity:0.5;"></div>
+    <div class="sparkle" style="width:2px;height:2px;top:62%;left:92%;opacity:0.4;"></div>
+    <div class="sparkle" style="width:5px;height:5px;top:75%;left:8%;opacity:0.35;"></div>
+    <div class="sparkle" style="width:2px;height:2px;top:88%;left:85%;opacity:0.5;"></div>
+    <div class="sparkle" style="width:3px;height:3px;top:92%;left:20%;opacity:0.4;"></div>
+    <div class="sparkle" style="width:4px;height:4px;top:5%;left:55%;opacity:0.35;"></div>
+    <div class="sparkle" style="width:2px;height:2px;top:45%;left:48%;opacity:0.25;"></div>
+    <div class="sparkle" style="width:6px;height:6px;top:70%;left:72%;opacity:0.2;"></div>
+  </div>
+
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="brand-pill">
+        <div class="brand-icon">✦</div>
+        <div class="brand-label">AI 文章摘要</div>
+      </div>
+      <div class="header-chips">
+        <div class="chip">KEY INSIGHTS</div>
+        <div class="chip">CLAUDE AI</div>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-eyebrow">
+        <div class="eyebrow-line"></div>
+        <span class="eyebrow-text">核心要點</span>
+      </div>
+      <h1 class="title">{{ title }}</h1>
+    </div>
+
+    <!-- Points Header -->
+    <div class="points-header">
+      <span class="points-header-text">重點摘要</span>
+      <div class="points-header-line"></div>
+    </div>
+
+    <!-- Points List -->
+    <div class="points-list">
+      {% for point in key_points %}
+      <div class="point-card">
+        <div class="point-num-col">
+          <div class="point-num">{{ "%02d"|format(loop.index) }}</div>
+          <div class="point-num-dot"></div>
+        </div>
+        <div class="point-emoji-col">{{ point.emoji }}</div>
+        <div class="point-text">{{ point.text }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Stats Row -->
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-value">{{ key_points|length }}</div>
+        <div class="stat-label">核心要點</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value">AI</div>
+        <div class="stat-label">智能分析</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value">30s</div>
+        <div class="stat-label">快速掌握</div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer" style="flex-direction: column; align-items: stretch; gap: 0;">
+      <div class="footer-rule-wrap">
+        <div class="footer-rule"></div>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <div class="footer-source">
+          {% if source %}<strong>來源：</strong>{{ source }}{% else %}<strong>AI 智能摘要</strong> · 由 Claude 生成{% endif %}
+        </div>
+        <div class="footer-badge">
+          <div class="footer-badge-dot"></div>
+          <div class="footer-badge-text">POWERED BY CLAUDE</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

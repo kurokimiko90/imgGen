@@ -258,7 +258,11 @@ async def curate_for_account(
                 title=ai_output.get("title", item.title[:15]),
                 body=ai_output["body"],
                 image_path=image_path,
+                output_path=image_path or "",
                 reasoning=ai_output["reasoning"],
+                theme=account_config.color_mood,
+                format="story",
+                provider="cli",
                 source_url=item.url,
                 source=item.source,
             )

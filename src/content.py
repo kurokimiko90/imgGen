@@ -61,7 +61,12 @@ class Content:
     title: str = ""
     body: str = ""
     image_path: Optional[str] = None
+    output_path: str = ""  # Path to generated image file (required by DB schema)
+    key_points_count: int = 0  # Number of key points in extracted data (legacy field)
     reasoning: str = ""
+    theme: str = "dark"  # Used by smart mode for color mood
+    format: str = "story"  # Used by renderer: story, square, landscape, twitter
+    provider: str = "cli"  # LLM provider used for extraction: cli, claude, gemini, gpt
     scheduled_time: Optional[datetime] = None
     published_at: Optional[datetime] = None
     source_url: Optional[str] = None

@@ -6,6 +6,8 @@ Supports multiple output formats and resolution scales.
 """
 
 import asyncio
+import concurrent.futures
+import threading
 from pathlib import Path
 
 try:
@@ -44,6 +46,12 @@ async def _take_screenshot_async(
         height: Viewport height in pixels
         scale: Device scale factor (1 or 2)
     """
+    if async_playwright is None:
+        raise RuntimeError(
+            "Playwright is not installed. Install it with: pip install playwright\n"
+            "Then run: playwright install chromium"
+        )
+
     # Determine image type from the output path extension
     ext = output_path.suffix.lower()
     image_type = "webp" if ext == ".webp" else "png"
@@ -100,11 +108,6 @@ def take_screenshot(
         ValueError: If format is not a recognised format name
         RuntimeError: If screenshot capture fails
         OSError: If output directory cannot be created
-
-    Note:
-        Uses asyncio.run() internally. Will raise RuntimeError if called from
-        within an already-running event loop (e.g., inside an async test or
-        async web framework). In that case, await _take_screenshot_async directly.
     """
     if format not in FORMAT_DIMENSIONS:
         raise ValueError(
@@ -118,9 +121,32 @@ def take_screenshot(
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     try:
-        asyncio.run(
-            _take_screenshot_async(html_content, output_path, width, height, scale)
-        )
+        # Check if there's already a running event loop
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            # No running loop, safe to use asyncio.run()
+            asyncio.run(
+                _take_screenshot_async(html_content, output_path, width, height, scale)
+            )
+        else:
+            # Already in async context - create new thread with its own event loop
+            import threading
+            import concurrent.futures
+
+            def _run_in_thread():
+                new_loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(new_loop)
+                try:
+                    new_loop.run_until_complete(
+                        _take_screenshot_async(html_content, output_path, width, height, scale)
+                    )
+                finally:
+                    new_loop.close()
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(_run_in_thread)
+                future.result(timeout=60)
     except Exception as e:
         raise RuntimeError(
             f"Failed to capture screenshot: {e}\n"

@@ -23,58 +23,94 @@ No AI image generation — uses HTML+CSS for stable, text-accurate visual output
 - **Phase E**: Account Settings API + SettingsPage (帳號配置管理)
 - **Backend**: FastAPI (6+ 端點 + SSE 串流) | **Frontend**: React 19 + Zustand + TanStack Query
 
-## Commands
+## Quick Start
 
+**環境檢查 + 完整啟動** (3 秒內):
 ```bash
-# Setup
+# 1️⃣ 初次設置（一次性）
 pip install -r requirements.txt
 playwright install chromium
-cp .env.example .env  # Add API keys
+cp .env.example .env  # 複製配置（無需 API key，已完全自動化）
 
-# Run CLI (imgGen core)
-python main.py --text "article text" --theme dark --format story
+# 2️⃣ 啟動完整 Web UI（推薦）
+# 終端 1：後端 (FastAPI @ :8001)
+cd web && python -m uvicorn api:app --reload --port 8001
+
+# 終端 2：前端 (React @ :5173，自動連接後端)
+cd web/frontend && npm run dev
+
+# ⚠️ 若港口被占用：kill -9 $(lsof -i :8001 | grep -oE '^\s*[0-9]+' | head -1)
+```
+
+**開啟瀏覽器：** http://localhost:5173
+- 在 **CurationPage** 點擊「開始策展」即可觸發完整自動化管道（爬蟲 → AI 評估 → 圖卡生成 → DB 儲存）
+
+---
+
+## Commands Reference
+
+### 🎨 CLI：單次圖卡生成（imgGen 核心）
+
+```bash
+# 基礎用法
+python main.py --text "文章內容" --theme dark --format story
 python main.py --url https://example.com/article --provider claude
 python main.py --file article.txt --theme gradient
-python main.py --file notes.md --mode article --theme light   # Article mode (3 sections)
-python main.py --file notes.md --mode smart --format story    # Smart mode (AI dynamic layout)
+
+# 三種模式
+python main.py --file notes.md --mode card --theme dark       # 卡片模式（預設）
+python main.py --file notes.md --mode article --theme light   # 文章模式（結構化 3 段）
+python main.py --file notes.md --mode smart --format story    # 智能模式（AI 動態佈局）
 python main.py --file notes.md --mode smart --color-mood dark_tech
+
+# 批次處理（並發控制）
 python main.py --batch entries.txt --workers 3 --output-dir ./output
+```
 
-# Design Review Loop (Cycle 3)
-python scripts/design_review_loop.py --theme dark
-python scripts/design_review_loop.py --theme dark --max-iter 3
+### 🔄 自動化工作流（LevelUp 系統）
 
-# LevelUp curation (Cycle 2) — ✅ FULLY AUTOMATED (no API key needed, uses Claude CLI)
-python scripts/daily_curation.py               # 三帳號並發策展 (A/B/C)
+**無需 API key，完全使用 Claude CLI**
+
+```bash
+# 策展（Cycle 2）— 爬蟲 → AI 評估 → 圖卡 → 儲存 DB
+python scripts/daily_curation.py               # 三帳號並發 (A/B/C)
 python scripts/daily_curation.py --account A   # 單帳號完整流程
-python scripts/daily_curation.py --dry-run     # 乾跑：不寫 DB，僅印出草稿
+python scripts/daily_curation.py --dry-run     # 乾跑：僅印出，不寫 DB
 
-# LevelUp audit (Cycle 4)
-python scripts/audit.py                        # 互動式審核
+# 審核（Cycle 4）— HITL 終端審核工作流
+python scripts/audit.py                        # 互動式審核 (A)pprove/(E)dit/(D)iscard/(S)kip
 python scripts/audit.py --account A            # 只審帳號 A
 python scripts/audit.py --batch               # 批次自動核准
-python scripts/audit.py --export-md           # 匯出 review.md
+python scripts/audit.py --export-md           # 匯出 Markdown（行動裝置友善審核）
 python scripts/audit.py --import-md review.md # 從 Markdown 回寫 DB
 
-# Tests
-.venv/bin/python -m pytest tests/ -v          # 全部（需 venv）
-pytest tests/ -v                               # system Python（略過 scrapers）
-pytest tests/test_config.py -v                # 單一測試文件
-pytest tests/test_config.py::test_name        # 單一測試
+# 設計循環（Cycle 3）— 自動化視覺優化
+python scripts/design_review_loop.py --theme dark
+python scripts/design_review_loop.py --theme dark --max-iter 3
+```
 
-# Web UI (LevelUp Phase A-E)
-cd web && uvicorn api:app --reload --port 8000           # Backend (FastAPI, Phase A-E API endpoints)
-cd web/frontend && npm run dev                           # Frontend (React dev server, localhost:5173)
-cd web/frontend && npm run build                         # Build production bundle
-cd web/frontend && npm run test                          # Run tests
+### ✅ 測試
 
-# API Documentation
-# Review API (Phase A):     POST/GET /api/content/*
-# Curation API (Phase B):   POST /api/curation/run (SSE stream)
-# Scheduling API (Phase C): GET/PATCH /api/content/scheduled
-# Drafts/Stats (Phase D):   GET /api/content/drafts, GET /api/curation/stats
-# Settings API (Phase E):   GET/PUT /api/accounts/*
-# See web/frontend/API_GUIDE.md for complete endpoint reference
+```bash
+# 完整測試套件
+pytest tests/ -v                               # 所有測試
+pytest tests/test_config.py -v                # 單一文件
+pytest tests/test_config.py::test_name -v    # 單一測試
+
+# 虛擬環境（非必須，系統 Python 已足夠）
+.venv/bin/python -m pytest tests/ -v
+```
+
+### 🌐 Web UI 開發
+
+```bash
+# 後端單獨啟動
+cd web && python -m uvicorn api:app --reload --port 8001
+
+# 前端單獨啟動
+cd web/frontend && npm run dev                 # dev server @ :5173
+cd web/frontend && npm run build              # 生產打包
+cd web/frontend && npm run test               # 前端測試
 ```
 
 ## Architecture
@@ -222,126 +258,204 @@ Configurable via `ExtractionConfig`: language (zh-TW default), tone, max/min poi
 
 ### LevelUp System Architecture
 
-LevelUp is a multi-account social media automation layer built on top of imgGen. It manages three accounts (A/B/C) through a complete pipeline:
+Multi-account social media automation built on imgGen. Manages three accounts (A/B/C):
 
 ```
-Scraper (Cycle 2)
-  → daily_curation.py   fetch raw items → Claude AI decides → imgGen card → Content(DRAFT) → DB
-
-HITL Review (Cycle 4)
-  → audit.py            PENDING_REVIEW → (A)pprove / (E)dit / (D)iscard / (S)kip
-                        preflight_check → calculate_scheduled_time → Content(APPROVED)
-
-Design Review (Cycle 3)
-  → design_review_loop.py  screenshot → Claude visual critique → CSS patch → iterate
+Cycle 2 (策展)  → daily_curation.py   爬蟲 → Claude AI 評估 → imgGen 圖卡 → DB(DRAFT)
+Cycle 4 (審核)  → audit.py            Markdown 審核 → 核准/編輯/棄用 → DB(APPROVED)
+Cycle 3 (設計)  → design_review_loop.py 截圖 → Claude 視覺評論 → CSS 修補 → 迭代
 ```
 
-**Account config**: `~/.imggen/accounts.toml` — three `[account.X]` sections with `platforms`, `publish_time`, `color_mood`, `prompt_file`, `tone`.
+**帳號配置** (`~/.imggen/accounts.toml`):
+- `[account.A]` — AI 自動化 (`prompts/account_a.txt`, `dark_tech`)
+- `[account.B]` — PMP 職涯 (`prompts/account_b.txt`, `clean_light`)
+- `[account.C]` — 足球英文 (`prompts/account_c.txt`, `bold_contrast`)
 
-**Prompt files**: `prompts/account_a.txt` (AI 自動化, dark_tech), `prompts/account_b.txt` (PMP 職涯, clean_light), `prompts/account_c.txt` (足球英文, bold_contrast).
+**狀態機**：`DRAFT → PENDING_REVIEW → APPROVED → PUBLISHED → ANALYZED` (或 `→ REJECTED`)
 
-**State machine**: `DRAFT → PENDING_REVIEW → APPROVED → PUBLISHED → ANALYZED` (also `DRAFT/PENDING_REVIEW → REJECTED`).
+### LevelUp Web UI (Phase A-E ✅)
 
-### LevelUp Web UI: Full-Stack Implementation (Phase A-E)
+完全集成於後端 (`web/api.py`) 和前端 (`web/frontend/src/`)。五個階段同步完成，共 85 項測試通過。
 
-**Backend** (`web/api.py`)
+| 階段 | 頁面 | 核心功能 |
+|------|------|---------|
+| **A** | ReviewPage | 待審內容核准/編輯、preflight 檢查 |
+| **B** | CurationPage | **SSE 即時進度**、策展統計 |
+| **C** | SchedulingPage | 週曆視圖、拖拽排期 |
+| **D** | — | DRAFT 列表、狀態轉換 |
+| **E** | AccountSettingsPage | 帳號配置、Prompt 編輯 |
 
-| Phase | Endpoints | Features |
-|-------|-----------|----------|
-| **A** | `GET /api/content/review` | 篩選待審內容（DRAFT/PENDING_REVIEW） |
-| | `POST /api/content/{id}/approve` | 單次往返 preflight 檢查 |
-| | `POST /api/content/{id}/reject` | 捨棄內容 |
-| | `PUT /api/content/{id}` | 編輯標題/內文 |
-| | `POST /api/content/batch` | 批次核准/捨棄 |
-| **B** | `POST /api/curation/run` | SSE 串流化進度（爬蟲→AI→圖卡→保存） |
-| | `GET /api/curation/status` | 查詢策展狀態 |
-| | `GET /api/curation/stats` | 今日/週統計 + 通過率 |
-| **C** | `GET /api/content/scheduled` | 日期範圍排程查詢 |
-| | `PATCH /api/content/{id}/reschedule` | 拖拽調整發布時間 |
-| **D** | `GET /api/content/drafts` | DRAFT 列表（帳號/來源/天數篩選） |
-| | `PATCH /api/content/{id}/status` | 狀態轉換（DRAFT → PENDING_REVIEW） |
-| **E** | `GET/PUT /api/accounts/{id}` | 讀寫帳號配置 |
-| | `POST /api/accounts/{id}/preview` | 預覽圖卡生成 |
+**架構核心**:
+- **Unified Response** — `ContentDetail` Pydantic 型別跨頁面共用
+- **SSE Streaming** — CurationPage 即時顯示爬蟲→AI→圖卡→保存進度
+- **State Management** — 4 個獨立 Zustand store (ReviewStore, CurationStore, SchedulingStore, SettingsStore)
+- **TanStack Query** — 伺服器狀態同步、自動快取和重新取得
 
-**Core Concepts**:
-- `ContentDetail` Pydantic 統一型別（所有頁面共用）
-- Single-HTTP-roundtrip preflight（無 `force` 參數，核准直接判定）
-- Progress callback pattern（daily_curation.py 中 10 行改動）
-- SSE streaming（實時 UI 更新）
+**詳見**:
+- `docs/LEVELUP_IMPLEMENTATION.md` — 完整實作文件
+- `web/frontend/API_GUIDE.md` — API 端點列表（6+ 端點、Request/Response 示例）
+- `web/frontend/ARCHITECTURE.md` — 前端架構詳解
 
-**Frontend** (`web/frontend/src/`)
+## Automation Status ✅
 
-| 頁面 | Store | 功能 |
-|------|-------|------|
-| **ReviewPage** | `useReviewStore` | 待審內容篩選、核准/編輯/批次操作 |
-| **CurationPage** | `useCurationStore` | SSE 進度動態、DRAFT 列表管理 |
-| **SchedulingPage** | `useSchedulingStore` | 週曆視圖、拖拽排期、時間調整 |
-| **AccountSettingsPage** | `useSettingsStore` | 帳號配置編輯、Prompt 編輯、預覽 |
-| **DashboardPage** | — | 統計儀表板（已存在） |
-
-**State Management**:
-- Zustand stores (4 pages, isolated per page)
-- TanStack Query (server state, caching, refetch)
-- React 19 + Framer Motion (page transitions)
-
-**API Query Hooks** (`api/queries.ts`):
-- Phase A: `useReviewContent`, `useApproveContent`, `useRejectContent`, `useEditContent`, `useBatchAction`
-- Phase B: `useCurationStatus`, `useCurationStats`
-- Phase C: `useScheduledRange`, `useReschedule`
-- Phase D: `useDrafts`, `useUpdateContentStatus`
-- Phase E: `useAccountPrompt`, `useUpdateAccount`, `useAccountPreview`
-
-**Key Architecture Decisions**:
-1. **Unified ContentDetail** — Same response type across Review/Scheduling/Curation pages (no adapter logic in frontend)
-2. **Single-roundtrip approval** — Backend executes preflight automatically, returns `{status: "OK"|"WARNING"|"ERROR", warnings[]}`
-3. **Progress callback** — Minimal backend change (10 lines) for real-time SSE streaming via `progress_callback` parameter
-4. **Per-page Zustand stores** — Each page manages its own UI state (filters, selections, modals) independently
-5. **Drag-and-drop scheduling** — ISO datetime extraction from ContentDetail, drop triggers PATCH reschedule
-
-**Documentation**:
-- `docs/LEVELUP_IMPLEMENTATION.md` — 完整實作檔 (Phase A-E, 85 tests passing)
-- `web/frontend/ARCHITECTURE.md` — 前端架構詳解 (Store 設計、元件樹、路由)
-- `web/frontend/API_GUIDE.md` — API 參考 (6+ 端點、Request/Response 示例、Frontend 用法)
-- `SYSTEM_VERIFICATION.md` — 自動化流程驗證報告 (2026-04-04 完成，6 個 DRAFT 成功生成)
-
-## Automation Status ✅ (Cycle 2: Daily Curation)
-
-**完整自動化管道已驗證** — 無需任何 API key，使用 Claude Code CLI 執行：
+**完整自動化管道**（2026-04-04 驗證）：
 
 ```
-Raw Items (RSS/API)
-  ↓ [爬蟲: 5 items/帳號]
-AI Evaluation (Claude CLI Haiku)
+Raw Items (RSS/API) → 爬蟲 [5 items/帳號]
   ↓ [2-3秒/項]
-Pass Filter? (should_publish=true)
-  ↓ [智能過濾]
-Generate Image (Smart Mode + Playwright)
+AI Evaluation (Claude CLI Haiku) → 智能過濾
+  ↓ [should_publish=true]
+Generate Image (Smart Mode + Playwright) → 圖卡生成
   ↓ [1-2秒/圖]
-Persist to DB (DRAFT status)
-  ↓ [SQLite + 自動遷移]
-Ready for Web UI Review
+Persist to DB → Content(DRAFT) → Web UI 待審
 ```
 
-**最新測試結果** (2026-04-04):
-- **帳號 A** (AI 自動化): 1 DRAFT ✅
-- **帳號 C** (足球英文): 5 DRAFT ✅  
-- **帳號 B** (PMP職涯): 無新項目
-- **圖片生成率**: 100% (6/6 成功)
-- **總耗時**: ~2-3 分鐘
+**驗證結果**：100% 成功率 (6/6 DRAFT 生成), ~2-3 分鐘完成三帳號並發
 
-**關鍵修復**:
-- Async/sync 衝突已解決 (screenshotter.py 檢測事件迴圈)
-- Content dataclass 欄位完整 (theme, format, provider, output_path 等)
-- 自動 DB 遷移系統 (003_add_image_path_column.sql, 004_add_updated_at_column.sql)
-
-**代碼提交**:
-- `be1706b` — fix: complete end-to-end automation pipeline
-- `ffe59f0` — docs: system verification report
+**無需 API key** — 完全使用 Claude Code CLI，支持在任何環境（CI/CD、本地、遠端）執行
 
 ## Environment Variables
 
-**Claude Code CLI (Primary, no API key needed)** — Default LLM provider for all operations. Automatically authenticates via Claude Code. Use this for complete automation pipeline without API keys.
+| 環境變數 | 用途 | 是否必須 |
+|---------|------|--------|
+| `ANTHROPIC_API_KEY` | Claude API（備用，預設使用 Claude CLI） | ❌ 否 |
+| `GOOGLE_API_KEY` | Gemini 抽取 | ❌ 否 |
+| `OPENAI_API_KEY` | GPT 抽取 | ❌ 否 |
+| `TWITTER_API_*` | Twitter 發佈（4 個金鑰） | ❌ 否 |
+| `API_FOOTBALL_KEY` | 足球賽事數據（RapidAPI） | ❌ 否 |
+| `TINIFY_API_KEY` | 圖像壓縮（design_review_loop） | ❌ 否 |
 
-**imgGen core** — Optional: `ANTHROPIC_API_KEY` (fallback Claude provider), `GOOGLE_API_KEY` (Gemini), `OPENAI_API_KEY` (GPT), `TWITTER_API_KEY`/`TWITTER_API_SECRET`/`TWITTER_ACCESS_TOKEN`/`TWITTER_ACCESS_SECRET` (Twitter publishing).
+**預設配置**：`Claude Code CLI`（不需要任何金鑰）
 
-**LevelUp** — Optional: `API_FOOTBALL_KEY` (RapidAPI, for football fixture data), `TINIFY_API_KEY` (image compression in design_review_loop).
+---
+
+## Development Workflow
+
+### 🔧 修改功能
+
+1. **分支策略** — 基於 main，命名：`feature/name` 或 `fix/description`
+2. **測試優先** — 編寫測試 → 實現功能 → 驗證通過
+3. **提交慣例** — `feat:` / `fix:` / `refactor:` / `docs:` / `test:`
+
+### 📝 常見任務
+
+| 任務 | 命令 |
+|------|------|
+| 添加新爬蟲 | 1. 建立 `src/scrapers/new_scraper.py` 2. 繼承 `BaseScraper` 3. 實現 `fetch()` 和 `parse()` |
+| 新增 Jinja2 主題 | 1. `templates/new_theme.html` 2. 更新 `VALID_THEMES` 3. 在 `_preview` 中測試 |
+| 修改資料庫結構 | 1. 建立 `src/migrations/NNN_description.sql` 2. `ContentDAO` 自動應用 3. 編寫測試驗證 |
+| 後端新增端點 | 1. `web/api.py` 中新增路由 2. 定義 Pydantic Request/Response 3. 在前端 `web/frontend/src/api/queries.ts` 添加 hook |
+| 前端新增頁面 | 1. `web/frontend/src/pages/NewPage.tsx` 2. 建立 `useNewStore.ts` (Zustand) 3. 路由設定 |
+
+### 🐛 調試技巧
+
+```bash
+# 檢查後端日誌（即時）
+tail -f /tmp/backend.log
+
+# 檢查資料庫內容
+sqlite3 ~/.imggen/content.db "SELECT id, title, status FROM content LIMIT 10;"
+
+# 乾跑策展（不寫 DB）
+python scripts/daily_curation.py --dry-run
+
+# 單帳號測試
+python scripts/daily_curation.py --account A
+
+# 檢查爬蟲輸出（原始）
+python -c "from src.scrapers.football_scraper import FootballScraper; s = FootballScraper(); print(s.fetch()[:500])"
+```
+
+---
+
+## Troubleshooting
+
+### ❌ 後端啟動失敗
+
+**症狀**：`Address already in use` (port 8000/8001)
+
+```bash
+# 檢查並殺死佔用進程
+ps aux | grep uvicorn
+# 改用不同港口
+python -m uvicorn web.api:app --port 8002
+# 或修改 vite.config.ts 的 proxy 設定
+```
+
+### ❌ 前端無法連接後端
+
+**症狀**：`ECONNREFUSED` 代理錯誤
+
+```bash
+# 1. 確認後端執行中
+curl http://localhost:8001/api/meta
+
+# 2. 檢查 vite.config.ts 港口設定
+cat web/frontend/vite.config.ts | grep proxy
+
+# 3. 前端需要後端執行才能開發
+# 終端 1：後端
+cd web && python -m uvicorn api:app --reload --port 8001
+# 終端 2：前端（在後端啟動後）
+cd web/frontend && npm run dev
+```
+
+### ❌ 資料庫遷移失敗
+
+**症狀**：`column not found` 或 `table does not exist`
+
+```bash
+# 1. 檢查遷移檔案
+ls -la src/migrations/
+
+# 2. 驗證 DB 架構
+sqlite3 ~/.imggen/content.db ".schema"
+
+# 3. 重置資料庫（若開發環境）
+rm ~/.imggen/content.db
+python scripts/daily_curation.py --dry-run  # 重新初始化
+```
+
+### ❌ 圖卡生成失敗
+
+**症狀**：`Playwright timeout` 或 `blank screenshot`
+
+```bash
+# 1. 檢查 Chromium 安裝
+playwright install chromium
+
+# 2. 測試單張圖卡（除錯模式）
+python -c "
+from src.renderer import render_and_capture
+data = {'title': 'Test', 'key_points': [{'text': 'Point 1'}]}
+render_and_capture(data, 'dark', 'story')
+"
+
+# 3. 檢查 screenshotter.py 日誌
+# 新增 --verbose 旗標（若支援）
+```
+
+### ❌ 策展無新內容
+
+**症狀**：`imported 0 items` 或爬蟲空結果
+
+```bash
+# 1. 測試爬蟲原始輸出
+python -c "from src.scrapers.football_scraper import FootballScraper; print(FootballScraper().fetch())"
+
+# 2. 檢查帳號配置
+cat ~/.imggen/accounts.toml | grep -A 5 "account.A"
+
+# 3. 查看 AI 評估過濾結果（乾跑）
+python scripts/daily_curation.py --account A --dry-run | grep should_publish
+```
+
+---
+
+## Resources
+
+- **架構圖**：見 `docs/` 資料夾
+- **API 完整參考**：`web/frontend/API_GUIDE.md`
+- **前端元件**：`web/frontend/src/pages/` 和 `web/frontend/src/components/`
+- **爬蟲列表**：`src/scrapers/` (football, tech, pmp)
+- **樣板系統**：`templates/` (28 主題 + article.html)

@@ -97,6 +97,88 @@ def call_claude_api(prompt_file: str, item: RawItem, provider: str = "cli") -> d
     return data
 
 
+def call_claude_api_batch(
+    prompt_file: str, items: list[RawItem], provider: str = "cli"
+) -> list[dict]:
+    """Call Claude to curate multiple items in a single batch request.
+
+    Builds a single prompt with all items in JSON format, requests JSON array response,
+    and maps results back to items by index.
+
+    Args:
+        prompt_file: Path to account-specific prompt template
+        items: List of RawItems to evaluate
+        provider: "cli" (default) or "claude"
+
+    Returns:
+        List of dicts (parallel to items), each with keys:
+        should_publish, title, body, content_type, reasoning
+
+    If parsing fails, falls back to per-item calls.
+    """
+    if not items:
+        return []
+
+    # Load base template
+    prompt_path = PROJECT_ROOT / prompt_file
+    template = prompt_path.read_text(encoding="utf-8")
+
+    # Serialize items to JSON to prevent prompt injection
+    items_data = [
+        {
+            "index": idx,
+            "title": item.title,
+            "url": item.url,
+            "summary": item.summary or "",
+            "source": item.source,
+        }
+        for idx, item in enumerate(items, 1)
+    ]
+
+    batch_prompt = (
+        template
+        + "\n\n--- ITEMS TO EVALUATE (JSON) ---\n"
+        + json.dumps(items_data, ensure_ascii=False, indent=2)
+        + "\n\nReturn a JSON array of decisions (in the same order as items above, indexed by item index). "
+        + "Each object must have: should_publish, title, body, content_type, reasoning."
+    )
+
+    try:
+        raw = _call_claude(batch_prompt, provider=provider)
+
+        # Extract JSON array from response
+        match = re.search(r"\[.*\]", raw, re.DOTALL)
+        if not match:
+            raise ValueError(f"No JSON array found in response: {raw[:200]}")
+
+        results = json.loads(match.group())
+        if not isinstance(results, list):
+            raise ValueError("Batch response is not a JSON array")
+
+        # Validate and normalize each result
+        output = []
+        for idx, result in enumerate(results):
+            if not isinstance(result, dict):
+                raise ValueError(f"Item {idx} is not a dict: {result}")
+            if "should_publish" not in result:
+                raise ValueError(f"Item {idx} missing 'should_publish'")
+            if result.get("should_publish") and not result.get("reasoning", "").strip():
+                raise ValueError(f"Item {idx}: reasoning is empty but should_publish=true")
+            output.append(result)
+
+        if len(output) != len(items):
+            raise ValueError(
+                f"Batch response has {len(output)} items, expected {len(items)}"
+            )
+
+        return output
+
+    except (ValueError, json.JSONDecodeError) as exc:
+        # Fallback to per-item calls on parse error
+        print(f"[batch] Parse failed: {exc}. Falling back to per-item calls...")
+        return [call_claude_api(prompt_file, item, provider=provider) for item in items]
+
+
 def _call_claude(prompt: str, provider: str = "cli", model: str = "haiku") -> str:
     """Call Claude via CLI or API and return raw text response.
 
@@ -229,11 +311,24 @@ async def curate_for_account(
         print(f"[{account_type}] No items fetched.")
         return 0
 
+    # Cap at 5 items per account per run
+    items_to_process = raw_items[:5]
+
+    # Batch AI evaluation: single call for all items
+    # If batch fails, fall back to per-item calls
+    try:
+        ai_outputs = call_claude_api_batch(account_config.prompt_file, items_to_process)
+    except Exception as exc:
+        print(f"[{account_type}] Batch evaluation failed ({exc}), falling back to per-item...")
+        ai_outputs = [
+            call_claude_api(account_config.prompt_file, item)
+            for item in items_to_process
+        ]
+
     drafted = 0
-    for item in raw_items[:5]:  # cap at 5 items per account per run
+    for item, ai_output in zip(items_to_process, ai_outputs):
         try:
             _emit("item_fetched", title=item.title, source=item.source)
-            ai_output = call_claude_api(account_config.prompt_file, item)
 
             if not ai_output.get("should_publish"):
                 reason = ai_output.get("reasoning", "")

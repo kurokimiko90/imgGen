@@ -58,7 +58,7 @@ class TestCurateForAccount:
         dao = MagicMock()
 
         with (
-            patch("scripts.daily_curation.call_claude_api", return_value=make_ai_output()),
+            patch("scripts.daily_curation.call_claude_api_batch", return_value=[make_ai_output()]),
             patch("scripts.daily_curation.generate_image", return_value=str(tmp_path / "img.png")),
         ):
             count = await curate_for_account("A", scraper, config, dao)
@@ -78,7 +78,7 @@ class TestCurateForAccount:
 
         dao = MagicMock()
 
-        with patch("scripts.daily_curation.call_claude_api", return_value=make_ai_output(should_publish=False)):
+        with patch("scripts.daily_curation.call_claude_api_batch", return_value=[make_ai_output(should_publish=False)]):
             count = await curate_for_account("A", scraper, config, dao)
 
         assert count == 0
@@ -95,19 +95,22 @@ class TestCurateForAccount:
         config.get_account.return_value = make_account_config()
 
         dao = MagicMock()
+        # First call raises, second succeeds
+        dao.create.side_effect = [RuntimeError("DB error"), None]
 
-        def ai_side_effect(prompt_file, item):
-            if item.title == "Bad":
-                raise RuntimeError("AI API error")
-            return make_ai_output()
+        # Batch call succeeds for both items
+        ai_outputs = [make_ai_output(), make_ai_output()]
 
         with (
-            patch("scripts.daily_curation.call_claude_api", side_effect=ai_side_effect),
+            patch("scripts.daily_curation.call_claude_api_batch", return_value=ai_outputs),
             patch("scripts.daily_curation.generate_image", return_value=str(tmp_path / "img.png")),
         ):
             count = await curate_for_account("A", scraper, config, dao)
 
+        # Should process both items, one fails but second succeeds
         assert count == 1
+        # Verify both were attempted (2 calls despite 1 failing)
+        assert dao.create.call_count == 2
 
     @pytest.mark.asyncio
     async def test_empty_scraper_returns_zero(self):
@@ -124,6 +127,31 @@ class TestCurateForAccount:
         assert count == 0
 
     @pytest.mark.asyncio
+    async def test_batch_failure_falls_back_to_per_item(self):
+        """When batch AI call fails, should fall back to per-item calls."""
+        from scripts.daily_curation import curate_for_account
+
+        scraper = MagicMock()
+        scraper.fetch.return_value = [make_raw_item("Item 1"), make_raw_item("Item 2")]
+
+        config = MagicMock()
+        config.get_account.return_value = make_account_config()
+
+        dao = MagicMock()
+
+        # Batch call fails, but per-item fallback succeeds
+        with (
+            patch("scripts.daily_curation.call_claude_api_batch", side_effect=RuntimeError("CLI not found")),
+            patch("scripts.daily_curation.call_claude_api", return_value=make_ai_output()),
+            patch("scripts.daily_curation.generate_image", return_value="/tmp/img.png"),
+        ):
+            count = await curate_for_account("A", scraper, config, dao)
+
+        # Should still create drafts via per-item fallback
+        assert count == 2
+        assert dao.create.call_count == 2
+
+    @pytest.mark.asyncio
     async def test_dry_run_does_not_write_db(self):
         from scripts.daily_curation import curate_for_account
 
@@ -134,7 +162,7 @@ class TestCurateForAccount:
         config.get_account.return_value = make_account_config()
         dao = MagicMock()
 
-        with patch("scripts.daily_curation.call_claude_api", return_value=make_ai_output()):
+        with patch("scripts.daily_curation.call_claude_api_batch", return_value=[make_ai_output()]):
             count = await curate_for_account("A", scraper, config, dao, dry_run=True)
 
         assert count == 1
@@ -152,7 +180,7 @@ class TestCurateForAccount:
         dao = MagicMock()
 
         with (
-            patch("scripts.daily_curation.call_claude_api", return_value=make_ai_output()),
+            patch("scripts.daily_curation.call_claude_api_batch", return_value=[make_ai_output()]),
             patch("scripts.daily_curation.generate_image", return_value=str(tmp_path / "img.png")),
         ):
             await curate_for_account("A", scraper, config, dao)
@@ -177,11 +205,81 @@ class TestCallClaudeApi:
             "---ITEM---\nTitle: {title}\nURL: {url}\nSummary: {summary}\nSource: {source}"
         )
 
-        mock_msg = MagicMock()
-        mock_msg.content = [MagicMock(text=bad_response)]
-        mock_client = MagicMock()
-        mock_client.messages.create.return_value = mock_msg
-
-        with patch("scripts.daily_curation.anthropic.Anthropic", return_value=mock_client):
+        with patch("scripts.daily_curation._call_claude", return_value=bad_response):
             with pytest.raises(ValueError, match="should_publish"):
                 call_claude_api(str(prompt_file), make_raw_item())
+
+
+# ---------------------------------------------------------------------------
+# call_claude_api_batch tests
+# ---------------------------------------------------------------------------
+
+
+class TestCallClaudeApiBatch:
+    def test_batch_returns_array_of_results(self, tmp_path):
+        from scripts.daily_curation import call_claude_api_batch
+
+        prompt_file = tmp_path / "account_a.txt"
+        prompt_file.write_text(
+            "---BATCH---\nTitle: {title}\nURL: {url}\nSummary: {summary}\nSource: {source}"
+        )
+
+        items = [make_raw_item("Item 1"), make_raw_item("Item 2")]
+
+        batch_response = """
+        [
+            {
+                "should_publish": true,
+                "title": "Result 1",
+                "body": "Body 1",
+                "content_type": "NEWS_RECAP",
+                "reasoning": "Good news"
+            },
+            {
+                "should_publish": false,
+                "title": "Result 2",
+                "body": "Body 2",
+                "content_type": "NEWS_RECAP",
+                "reasoning": "Not relevant"
+            }
+        ]
+        """
+
+        with patch("scripts.daily_curation._call_claude", return_value=batch_response):
+            results = call_claude_api_batch(str(prompt_file), items)
+
+        assert len(results) == 2
+        assert results[0]["should_publish"] is True
+        assert results[1]["should_publish"] is False
+
+    def test_batch_fallback_to_per_item_on_parse_error(self, tmp_path):
+        from scripts.daily_curation import call_claude_api_batch
+
+        prompt_file = tmp_path / "account_a.txt"
+        prompt_file.write_text(
+            "---BATCH---\nTitle: {title}\nURL: {url}\nSummary: {summary}\nSource: {source}"
+        )
+
+        items = [make_raw_item("Item 1"), make_raw_item("Item 2")]
+
+        # Invalid JSON array (fallback should trigger)
+        bad_response = "This is not JSON"
+
+        with (
+            patch("scripts.daily_curation._call_claude", return_value=bad_response),
+            patch("scripts.daily_curation.call_claude_api", return_value=make_ai_output()),
+        ):
+            results = call_claude_api_batch(str(prompt_file), items)
+
+        # Should have fallen back to per-item calls (1 call for each of 2 items)
+        assert len(results) == 2
+        assert all(r.get("should_publish") for r in results)
+
+    def test_batch_empty_items_returns_empty(self, tmp_path):
+        from scripts.daily_curation import call_claude_api_batch
+
+        prompt_file = tmp_path / "account_a.txt"
+        prompt_file.write_text("template")
+
+        results = call_claude_api_batch(str(prompt_file), [])
+        assert results == []

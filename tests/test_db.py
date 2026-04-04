@@ -7,11 +7,11 @@ from src.content import Content, ContentStatus, AccountType, ContentType
 
 @pytest.fixture
 def temp_db(tmp_path):
-    """Create a temporary test database"""
+    """Create a temporary test database with full schema"""
     db_path = tmp_path / "test.db"
     conn = sqlite3.connect(str(db_path))
 
-    # Create schema
+    # Create schema with all columns (post-migration)
     cursor = conn.cursor()
     cursor.execute("""
     CREATE TABLE generations (
@@ -22,17 +22,35 @@ def temp_db(tmp_path):
         title TEXT,
         body TEXT,
         image_path TEXT,
+        output_path TEXT,
         reasoning TEXT DEFAULT '',
         scheduled_time TEXT,
         published_at TEXT,
         source_url TEXT,
         source TEXT,
+        provider TEXT DEFAULT 'cli',
+        theme TEXT,
+        format TEXT,
         platform_status TEXT DEFAULT '{}',
         engagement_data TEXT DEFAULT '{}',
-        created_at TEXT,
-        updated_at TEXT
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        key_points_count INTEGER
     )
     """)
+    # Create migrations table and mark all migrations as applied
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS _migrations (
+        name TEXT PRIMARY KEY,
+        applied_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+    # Mark all migrations as applied so DAO doesn't try to re-apply them
+    migration_files = ["000_create_generations_table.sql", "001_add_levelup_columns.sql",
+                      "002_add_body_column.sql", "003_add_image_path_column.sql",
+                      "004_add_updated_at_column.sql"]
+    for migration_file in migration_files:
+        cursor.execute("INSERT OR IGNORE INTO _migrations (name) VALUES (?)", (migration_file,))
     conn.commit()
     conn.close()
     return str(db_path)
@@ -88,6 +106,55 @@ class TestContentDAO:
         """find_by_id() should return None when id doesn't exist"""
         dao = ContentDAO(temp_db)
         result = dao.find_by_id("99999")
+        assert result is None
+
+    def test_find_by_source_url_returns_content(self, temp_db):
+        """find_by_source_url() should return content by source_url"""
+        dao = ContentDAO(temp_db)
+        c = Content(id="temp", account_type=AccountType.A, source_url="https://example.com/article1")
+        content_id = dao.create(c)
+
+        retrieved = dao.find_by_source_url("https://example.com/article1")
+        assert retrieved is not None
+        assert retrieved.id == content_id
+
+    def test_find_by_source_url_skips_rejected(self, temp_db):
+        """find_by_source_url() should skip REJECTED content"""
+        dao = ContentDAO(temp_db)
+
+        # Create and reject first version
+        c1 = Content(id="t1", account_type=AccountType.A, source_url="https://example.com/article2", status=ContentStatus.REJECTED)
+        dao.create(c1)
+
+        # Create new version of same URL
+        c2 = Content(id="t2", account_type=AccountType.A, source_url="https://example.com/article2", status=ContentStatus.DRAFT)
+        content_id_2 = dao.create(c2)
+
+        # Should return the non-rejected one
+        retrieved = dao.find_by_source_url("https://example.com/article2")
+        assert retrieved is not None
+        assert retrieved.id == content_id_2
+
+    def test_find_by_source_url_returns_most_recent(self, temp_db):
+        """find_by_source_url() should return most recent non-rejected"""
+        dao = ContentDAO(temp_db)
+
+        # Create two non-rejected versions
+        c1 = Content(id="t1", account_type=AccountType.A, source_url="https://example.com/article3", status=ContentStatus.DRAFT)
+        dao.create(c1)
+
+        c2 = Content(id="t2", account_type=AccountType.A, source_url="https://example.com/article3", status=ContentStatus.APPROVED)
+        content_id_2 = dao.create(c2)
+
+        # Should return the most recent
+        retrieved = dao.find_by_source_url("https://example.com/article3")
+        assert retrieved is not None
+        assert retrieved.id == content_id_2
+
+    def test_find_by_source_url_returns_none_for_missing(self, temp_db):
+        """find_by_source_url() should return None for non-existent URL"""
+        dao = ContentDAO(temp_db)
+        result = dao.find_by_source_url("https://example.com/nonexistent")
         assert result is None
 
     def test_delete_removes_content(self, temp_db):

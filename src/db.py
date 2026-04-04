@@ -251,6 +251,33 @@ class ContentDAO:
         finally:
             conn.close()
 
+    def find_by_source_url(self, source_url: str) -> Content | None:
+        """Find the most recent non-rejected Content record by source URL.
+
+        Args:
+            source_url: The source URL to look up.
+
+        Returns:
+            The most recent non-rejected Content object with that URL, or None.
+        """
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT * FROM generations "
+                "WHERE source_url = ? AND status != ? "
+                "ORDER BY created_at DESC LIMIT 1",
+                (source_url, ContentStatus.REJECTED.value)
+            )
+            row = cursor.fetchone()
+            if row is None:
+                return None
+            row_dict = self._deserialize_row(dict(row))
+            row_dict['id'] = str(row_dict['id'])
+            return Content.from_dict(row_dict)
+        finally:
+            conn.close()
+
     def find_scheduled(
         self,
         start_date: str,

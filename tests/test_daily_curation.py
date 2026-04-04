@@ -56,6 +56,7 @@ class TestCurateForAccount:
         config.get_account.return_value = make_account_config()
 
         dao = MagicMock()
+        dao.find_by_source_url.return_value = None  # No duplicates
 
         with (
             patch("scripts.daily_curation.call_claude_api_batch", return_value=[make_ai_output()]),
@@ -77,6 +78,7 @@ class TestCurateForAccount:
         config.get_account.return_value = make_account_config()
 
         dao = MagicMock()
+        dao.find_by_source_url.return_value = None  # No duplicates
 
         with patch("scripts.daily_curation.call_claude_api_batch", return_value=[make_ai_output(should_publish=False)]):
             count = await curate_for_account("A", scraper, config, dao)
@@ -95,6 +97,7 @@ class TestCurateForAccount:
         config.get_account.return_value = make_account_config()
 
         dao = MagicMock()
+        dao.find_by_source_url.return_value = None  # No duplicates
         # First call raises, second succeeds
         dao.create.side_effect = [RuntimeError("DB error"), None]
 
@@ -138,6 +141,7 @@ class TestCurateForAccount:
         config.get_account.return_value = make_account_config()
 
         dao = MagicMock()
+        dao.find_by_source_url.return_value = None  # No duplicates
 
         # Batch call fails, but per-item fallback succeeds
         with (
@@ -152,6 +156,41 @@ class TestCurateForAccount:
         assert dao.create.call_count == 2
 
     @pytest.mark.asyncio
+    async def test_deduplicates_by_source_url(self, tmp_path):
+        """Should skip items with duplicate source URLs in DB."""
+        from scripts.daily_curation import curate_for_account
+
+        scraper = MagicMock()
+        scraper.fetch.return_value = [
+            make_raw_item("Item 1", "http://example.com/1"),
+            make_raw_item("Item 2", "http://example.com/2"),
+        ]
+
+        config = MagicMock()
+        config.get_account.return_value = make_account_config()
+
+        dao = MagicMock()
+        # First URL exists in DB, second doesn't
+        def find_by_url_side_effect(url):
+            if url == "http://example.com/1":
+                return MagicMock(id="123")  # Existing content
+            return None
+        dao.find_by_source_url.side_effect = find_by_url_side_effect
+
+        with (
+            patch("scripts.daily_curation.call_claude_api_batch", return_value=[make_ai_output()]),
+            patch("scripts.daily_curation.generate_image", return_value=str(tmp_path / "img.png")),
+        ):
+            count = await curate_for_account("A", scraper, config, dao)
+
+        # Should only create draft for Item 2 (Item 1 is duplicate)
+        assert count == 1
+        dao.create.assert_called_once()
+
+        # Verify find_by_source_url was called for both items
+        assert dao.find_by_source_url.call_count == 2
+
+    @pytest.mark.asyncio
     async def test_dry_run_does_not_write_db(self):
         from scripts.daily_curation import curate_for_account
 
@@ -161,6 +200,7 @@ class TestCurateForAccount:
         config = MagicMock()
         config.get_account.return_value = make_account_config()
         dao = MagicMock()
+        dao.find_by_source_url.return_value = None  # No duplicates
 
         with patch("scripts.daily_curation.call_claude_api_batch", return_value=[make_ai_output()]):
             count = await curate_for_account("A", scraper, config, dao, dry_run=True)
@@ -178,6 +218,7 @@ class TestCurateForAccount:
         config = MagicMock()
         config.get_account.return_value = make_account_config()
         dao = MagicMock()
+        dao.find_by_source_url.return_value = None  # No duplicates
 
         with (
             patch("scripts.daily_curation.call_claude_api_batch", return_value=[make_ai_output()]),

@@ -311,8 +311,19 @@ async def curate_for_account(
         print(f"[{account_type}] No items fetched.")
         return 0
 
-    # Cap at 5 items per account per run
-    items_to_process = raw_items[:5]
+    # Deduplicate by source URL: skip items already in DB (unless REJECTED)
+    items_to_process = []
+    for item in raw_items[:5]:
+        existing = dao.find_by_source_url(item.url)
+        if existing:
+            print(f"[{account_type}] Skip duplicate: {item.title[:50]} (existing id={existing.id})")
+            _emit("item_skipped", title=item.title, reason="Duplicate URL in DB")
+            continue
+        items_to_process.append(item)
+
+    if not items_to_process:
+        print(f"[{account_type}] All items already processed.")
+        return 0
 
     # Batch AI evaluation: single call for all items
     # If batch fails, fall back to per-item calls

@@ -842,6 +842,262 @@ async def api_content_batch(req: BatchActionRequest):
 
 
 # ---------------------------------------------------------------------------
+# Phase B: Curation API (SSE progress streaming)
+# ---------------------------------------------------------------------------
+
+class CurationRunRequest(BaseModel):
+    accounts: list[str] = ["A", "B", "C"]
+    dry_run: bool = False
+
+
+# Tracks active curation run state
+_curation_state: dict[str, Any] = {"running": False, "started_at": None, "progress": []}
+
+
+def _sse(event_type: str, **kwargs: Any) -> str:
+    """Format a server-sent event line."""
+    return f"data: {json.dumps({'type': event_type, **kwargs})}\n\n"
+
+
+@app.post("/api/curation/run")
+async def api_curation_run(req: CurationRunRequest):
+    """Trigger curation pipeline with SSE progress streaming.
+
+    Returns a stream of events:
+      start, account_start, item_fetched, generating_image,
+      saved_draft, item_skipped, item_error, account_done, done
+    """
+    global _curation_state
+
+    if _curation_state.get("running"):
+        raise _err("A curation run is already in progress.", 409)
+
+    # Validate accounts
+    valid_accounts = {"A", "B", "C"}
+    for acct in req.accounts:
+        if acct not in valid_accounts:
+            raise _err(f"Invalid account: {acct}. Must be A, B, or C.", 400)
+
+    async def stream():
+        global _curation_state
+
+        _curation_state = {
+            "running": True,
+            "started_at": datetime.now().isoformat(),
+            "progress": [],
+        }
+
+        sys.path.insert(0, str(PROJECT_ROOT))
+        from scripts.daily_curation import curate_for_account, SCRAPERS
+        from src.config import LevelUpConfig
+
+        yield _sse("start", accounts=req.accounts, dry_run=req.dry_run)
+
+        total_drafted = 0
+        loop = asyncio.get_running_loop()
+        event_queue: asyncio.Queue[dict] = asyncio.Queue()
+        done_event = asyncio.Event()
+
+        def emit_callback(event_type: str, **kwargs: Any) -> None:
+            """Thread-safe callback: puts event into asyncio queue."""
+            event = {"type": event_type, **kwargs}
+            _curation_state["progress"].append(event)
+            loop.call_soon_threadsafe(event_queue.put_nowait, event)
+
+        async def _run_account(acct_id: str) -> int:
+            """Run one account's curation in a thread executor."""
+            scraper = SCRAPERS[acct_id]()
+            config = LevelUpConfig()
+            dao = ContentDAO()
+
+            def _blocking():
+                return asyncio.run(
+                    curate_for_account(
+                        acct_id, scraper, config, dao,
+                        dry_run=req.dry_run,
+                        progress_callback=emit_callback,
+                    )
+                )
+
+            return await loop.run_in_executor(None, _blocking)
+
+        async def _drain_queue() -> None:
+            """Yield events from queue until signalled done."""
+            while not done_event.is_set() or not event_queue.empty():
+                try:
+                    event = event_queue.get_nowait()
+                    yield event
+                except asyncio.QueueEmpty:
+                    await asyncio.sleep(0.05)
+
+        try:
+            for acct_id in req.accounts:
+                yield _sse("account_start", account=acct_id)
+                done_event.clear()
+
+                task = asyncio.create_task(_run_account(acct_id))
+
+                # Stream events while task runs
+                while not task.done():
+                    try:
+                        event = event_queue.get_nowait()
+                        yield f"data: {json.dumps(event)}\n\n"
+                    except asyncio.QueueEmpty:
+                        await asyncio.sleep(0.05)
+
+                # Drain remaining events after task finishes
+                while not event_queue.empty():
+                    event = await event_queue.get()
+                    yield f"data: {json.dumps(event)}\n\n"
+
+                done_event.set()
+
+                result = task.result()
+                if isinstance(result, Exception):
+                    yield _sse("account_error", account=acct_id, error=str(result))
+                else:
+                    total_drafted += result
+                    yield _sse("account_done", account=acct_id, drafted=result)
+
+        except Exception as exc:
+            yield _sse("error", message=str(exc))
+        finally:
+            _curation_state["running"] = False
+            yield _sse("done", total_drafted=total_drafted)
+
+    return StreamingResponse(stream(), media_type="text/event-stream")
+
+
+@app.get("/api/curation/status")
+async def api_curation_status():
+    """Return the current curation run status."""
+    return _ok(**_curation_state)
+
+
+@app.get("/api/curation/stats")
+async def api_curation_stats():
+    """Return curation statistics (today/week/approval_rate per account)."""
+    dao = ContentDAO()
+    stats = dao.get_curation_stats()
+    return _ok(stats=stats)
+
+
+# ---------------------------------------------------------------------------
+# Phase C: Scheduling API
+# ---------------------------------------------------------------------------
+
+class RescheduleRequest(BaseModel):
+    scheduled_time: str  # ISO 8601 datetime string
+
+
+@app.get("/api/content/scheduled")
+async def api_content_scheduled(
+    start: str | None = None,
+    end: str | None = None,
+    account: str | None = None,
+):
+    """Return APPROVED content scheduled in a date range.
+
+    ?start=2026-03-30&end=2026-04-06&account=A
+    """
+    today = datetime.now().strftime("%Y-%m-%d")
+    start_date = start or today
+    end_date = end or today
+
+    dao = ContentDAO()
+    account_cfgs = _load_levelup_accounts()
+    items = dao.find_scheduled(start_date, end_date, account_type=account)
+
+    result = []
+    for content in items:
+        acct_cfg = account_cfgs.get(content.account_type.value, {})
+        detail = _content_to_detail(content, acct_cfg.get("name", ""), acct_cfg.get("platforms", []))
+        result.append(detail)
+
+    return _ok(items=result, total=len(result))
+
+
+@app.patch("/api/content/{content_id}/reschedule")
+async def api_content_reschedule(content_id: str, req: RescheduleRequest):
+    """Update scheduled_time for content (drag-and-drop reschedule)."""
+    # Validate ISO 8601 format
+    try:
+        new_time = datetime.fromisoformat(req.scheduled_time)
+    except ValueError:
+        raise _err(f"Invalid scheduled_time: '{req.scheduled_time}'. Expected ISO 8601.", 400)
+
+    dao = ContentDAO()
+    content = dao.find_by_id(content_id)
+    if not content:
+        raise _err(f"Content #{content_id} not found.", 404)
+
+    new_content = dc_replace(content, scheduled_time=new_time)
+    dao.update(new_content)
+
+    account_cfgs = _load_levelup_accounts()
+    acct_cfg = account_cfgs.get(content.account_type.value, {})
+
+    return _ok(item=_content_to_detail(new_content, acct_cfg.get("name", ""), acct_cfg.get("platforms", [])).model_dump())
+
+
+# ---------------------------------------------------------------------------
+# Phase D: Curation content list
+# ---------------------------------------------------------------------------
+
+class StatusUpdateRequest(BaseModel):
+    status: str  # "PENDING_REVIEW" | "REJECTED"
+
+
+@app.get("/api/content/drafts")
+async def api_content_drafts(
+    account: str | None = None,
+    source: str | None = None,
+    days: int | None = None,
+):
+    """Return DRAFT content with optional filters.
+
+    ?account=A&source=hacker_news&days=7
+    """
+    dao = ContentDAO()
+    account_cfgs = _load_levelup_accounts()
+    items = dao.find_drafts(account_type=account, source=source, days=days)
+
+    result = []
+    for content in items:
+        acct_cfg = account_cfgs.get(content.account_type.value, {})
+        detail = _content_to_detail(content, acct_cfg.get("name", ""), acct_cfg.get("platforms", []))
+        result.append(detail)
+
+    return _ok(items=result, total=len(result))
+
+
+@app.patch("/api/content/{content_id}/status")
+async def api_content_status_update(content_id: str, req: StatusUpdateRequest):
+    """Transition content to PENDING_REVIEW or REJECTED (Curation page action)."""
+    allowed_statuses = {"PENDING_REVIEW", "REJECTED"}
+    if req.status not in allowed_statuses:
+        raise _err(f"status must be one of: {', '.join(allowed_statuses)}", 400)
+
+    dao = ContentDAO()
+    content = dao.find_by_id(content_id)
+    if not content:
+        raise _err(f"Content #{content_id} not found.", 404)
+
+    try:
+        new_status = ContentStatus(req.status)
+    except ValueError:
+        raise _err(f"Invalid status: {req.status}", 400)
+
+    new_content = dc_replace(content, status=new_status)
+    dao.update(new_content)
+
+    account_cfgs = _load_levelup_accounts()
+    acct_cfg = account_cfgs.get(content.account_type.value, {})
+
+    return _ok(item=_content_to_detail(new_content, acct_cfg.get("name", ""), acct_cfg.get("platforms", [])).model_dump())
+
+
+# ---------------------------------------------------------------------------
 # Dashboard / LevelUp content endpoints
 # ---------------------------------------------------------------------------
 

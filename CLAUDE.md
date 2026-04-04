@@ -44,10 +44,10 @@ python main.py --batch entries.txt --workers 3 --output-dir ./output
 python scripts/design_review_loop.py --theme dark
 python scripts/design_review_loop.py --theme dark --max-iter 3
 
-# LevelUp curation (Cycle 2)
-python scripts/daily_curation.py               # 三帳號並發策展
-python scripts/daily_curation.py --account A   # 單帳號
-python scripts/daily_curation.py --dry-run     # 不寫 DB，僅印出草稿
+# LevelUp curation (Cycle 2) — ✅ FULLY AUTOMATED (no API key needed, uses Claude CLI)
+python scripts/daily_curation.py               # 三帳號並發策展 (A/B/C)
+python scripts/daily_curation.py --account A   # 單帳號完整流程
+python scripts/daily_curation.py --dry-run     # 乾跑：不寫 DB，僅印出草稿
 
 # LevelUp audit (Cycle 4)
 python scripts/audit.py                        # 互動式審核
@@ -101,7 +101,7 @@ Input (--text / --file / --url / --batch)
 | `src/extractor.py` | Multi-provider AI extraction with `ExtractionConfig` dataclass; handles card/article/smart modes |
 | `src/renderer.py` | Jinja2 template rendering (28 themes, 4 formats), watermark embedding, format sizing |
 | `src/smart_renderer.py` | AI-driven dynamic layout generation (Claude generates bespoke HTML+CSS per content); exports `COLOR_PALETTES`, `LAYOUT_PATTERNS` |
-| `src/screenshotter.py` | Async Playwright headless Chromium screenshots |
+| `src/screenshotter.py` | Async Playwright headless Chromium screenshots; detects running event loop and uses ThreadPoolExecutor for concurrent execution |
 | `src/batch.py` | Async batch with `asyncio.Semaphore(workers)` concurrency control |
 | `src/config.py` | TOML config system (`~/.imggenrc`) with presets + `LevelUpConfig`/`AccountConfig` for multi-account |
 | `src/history.py` | SQLite (WAL mode) generation history at `~/.imggen/history.db` |
@@ -115,8 +115,8 @@ Input (--text / --file / --url / --batch)
 
 | Module | Role |
 |--------|------|
-| `src/content.py` | `Content` dataclass + `ContentStatus` state machine (DRAFT→PENDING_REVIEW→APPROVED→PUBLISHED→ANALYZED) |
-| `src/db.py` | `ContentDAO` — SQLite CRUD for Content records; `find_by_status()`, `find_by_id()`, `update()`, `create()` |
+| `src/content.py` | `Content` dataclass with full schema (title, body, image_path, output_path, theme, format, provider, key_points_count, etc.) + `ContentStatus` state machine (DRAFT→PENDING_REVIEW→APPROVED→PUBLISHED→ANALYZED) |
+| `src/db.py` | `ContentDAO` — SQLite CRUD for Content records; auto-discovers and applies migrations from `src/migrations/`; `find_by_status()`, `find_by_id()`, `update()`, `create()` |
 | `src/preflight.py` | `preflight_check(content, platforms)` — 7-rule validation before publishing (char limits, IG image, empty fields) |
 | `src/scheduler.py` | `calculate_scheduled_time()`, `assign_scheduled_times()` — publish time assignment from `AccountConfig.publish_time` |
 | `src/markdown_io.py` | `export_markdown()`, `parse_markdown()`, `import_markdown()` — mobile-friendly review workflow via Markdown |
@@ -124,7 +124,7 @@ Input (--text / --file / --url / --batch)
 | `src/scrapers/football_scraper.py` | BBC Sport RSS + optional API-Football (requires `API_FOOTBALL_KEY`) |
 | `src/scrapers/tech_scraper.py` | Hacker News API + TechCrunch RSS |
 | `src/scrapers/pmp_scraper.py` | HBR RSS + PMI Blog RSS |
-| `scripts/daily_curation.py` | Daily curation pipeline: scrape → Claude AI curation → imgGen image → DB DRAFT |
+| `scripts/daily_curation.py` | Daily curation pipeline: scrape → Claude AI curation (CLI-first, no API key) → imgGen smart image → DB DRAFT; supports A/B/C parallel execution |
 | `scripts/audit.py` | HITL terminal review system: A/E/D/S/Q interactive + `--batch` + `--export-md`/`--import-md` |
 | `scripts/design_review_loop.py` | Automated design review: screenshot → Claude visual analysis → CSS patch → iterate (max 5×) |
 
@@ -302,9 +302,46 @@ Design Review (Cycle 3)
 - `docs/LEVELUP_IMPLEMENTATION.md` — 完整實作檔 (Phase A-E, 85 tests passing)
 - `web/frontend/ARCHITECTURE.md` — 前端架構詳解 (Store 設計、元件樹、路由)
 - `web/frontend/API_GUIDE.md` — API 參考 (6+ 端點、Request/Response 示例、Frontend 用法)
+- `SYSTEM_VERIFICATION.md` — 自動化流程驗證報告 (2026-04-04 完成，6 個 DRAFT 成功生成)
+
+## Automation Status ✅ (Cycle 2: Daily Curation)
+
+**完整自動化管道已驗證** — 無需任何 API key，使用 Claude Code CLI 執行：
+
+```
+Raw Items (RSS/API)
+  ↓ [爬蟲: 5 items/帳號]
+AI Evaluation (Claude CLI Haiku)
+  ↓ [2-3秒/項]
+Pass Filter? (should_publish=true)
+  ↓ [智能過濾]
+Generate Image (Smart Mode + Playwright)
+  ↓ [1-2秒/圖]
+Persist to DB (DRAFT status)
+  ↓ [SQLite + 自動遷移]
+Ready for Web UI Review
+```
+
+**最新測試結果** (2026-04-04):
+- **帳號 A** (AI 自動化): 1 DRAFT ✅
+- **帳號 C** (足球英文): 5 DRAFT ✅  
+- **帳號 B** (PMP職涯): 無新項目
+- **圖片生成率**: 100% (6/6 成功)
+- **總耗時**: ~2-3 分鐘
+
+**關鍵修復**:
+- Async/sync 衝突已解決 (screenshotter.py 檢測事件迴圈)
+- Content dataclass 欄位完整 (theme, format, provider, output_path 等)
+- 自動 DB 遷移系統 (003_add_image_path_column.sql, 004_add_updated_at_column.sql)
+
+**代碼提交**:
+- `be1706b` — fix: complete end-to-end automation pipeline
+- `ffe59f0` — docs: system verification report
 
 ## Environment Variables
 
-**imgGen core** — Required: `ANTHROPIC_API_KEY` (Claude provider). Optional: `GOOGLE_API_KEY` (Gemini), `OPENAI_API_KEY` (GPT), `TWITTER_API_KEY`/`TWITTER_API_SECRET`/`TWITTER_ACCESS_TOKEN`/`TWITTER_ACCESS_SECRET` (publishing).
+**Claude Code CLI (Primary, no API key needed)** — Default LLM provider for all operations. Automatically authenticates via Claude Code. Use this for complete automation pipeline without API keys.
+
+**imgGen core** — Optional: `ANTHROPIC_API_KEY` (fallback Claude provider), `GOOGLE_API_KEY` (Gemini), `OPENAI_API_KEY` (GPT), `TWITTER_API_KEY`/`TWITTER_API_SECRET`/`TWITTER_ACCESS_TOKEN`/`TWITTER_ACCESS_SECRET` (Twitter publishing).
 
 **LevelUp** — Optional: `API_FOOTBALL_KEY` (RapidAPI, for football fixture data), `TINIFY_API_KEY` (image compression in design_review_loop).

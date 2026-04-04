@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  {% if format == 'landscape' %}<meta name="viewport" content="width=768" />
+  {% elif format == 'twitter' %}<meta name="viewport" content="width=540" />
+  {% else %}<meta name="viewport" content="width=430" />{% endif %}
+  <title>{{ title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    /*
+     * hook.html — Noir Brutalist v2
+     * DESIGN_VARIANCE=8 / MOTION_INTENSITY=6 / VISUAL_DENSITY=4
+     * Palette: charcoal #0C0C0C · off-white #F5F5F0 · warm-gold #D4B848 (sat 57%)
+     * v2: question fills middle with flex:1, decorative ? background char
+     */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #0C0C0C;
+      --text:         #F5F5F0;
+      --text-body:    #ADADAA;
+      --text-dim:     #5A5A56;
+      --accent:       #D4B848;
+      --accent-rule:  rgba(212,184,72,0.18);
+      --accent-glow:  rgba(212,184,72,0.06);
+      --border-faint: rgba(245,245,240,0.07);
+    }
+
+    html, body {
+      width: 100%;
+      background: var(--bg);
+      font-family: 'Outfit', 'Noto Sans TC', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    body:not([data-format="square"]) { min-height: 100vh; }
+
+    body[data-format="square"] {
+      height: 430px;
+      overflow: hidden;
+    }
+
+    .page {
+      max-width: 430px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    body:not([data-format="square"]) .page {
+      padding: 28px 22px 26px;
+      min-height: 100vh;
+    }
+
+    body[data-format="square"] .page {
+      height: 430px;
+      padding: 16px 18px 14px;
+      overflow: hidden;
+    }
+
+    /* ── Top label bar ── */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 0;
+      flex-shrink: 0;
+    }
+
+    .top-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .top-rule {
+      flex: 1;
+      height: 1px;
+      background: var(--accent-rule);
+    }
+
+    .top-badge {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+      border: 1px solid rgba(245,245,240,0.08);
+      border-radius: 3px;
+      padding: 2px 8px;
+      box-shadow: inset 0 1px 0 rgba(245,245,240,0.04);
+      white-space: nowrap;
+    }
+
+    /* ── Middle zone: question fills all available space ── */
+    .hook-mid {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    body:not([data-format="square"]) .hook-mid { padding: 24px 0 20px; }
+    body[data-format="square"]       .hook-mid { padding: 12px 0 8px; min-height: 0; }
+
+    /* Decorative background ? — GPU layer, pointer-events-none */
+    .deco-char {
+      position: absolute;
+      right: -24px;
+      top: 50%;
+      transform: translateY(-50%) rotate(-12deg);
+      font-weight: 900;
+      line-height: 1;
+      color: rgba(212,184,72,0.032);
+      letter-spacing: -0.05em;
+      pointer-events: none;
+      user-select: none;
+      will-change: transform;
+    }
+
+    body:not([data-format="square"]) .deco-char { font-size: 340px; }
+    body[data-format="square"]       .deco-char { font-size: 180px; }
+
+    /* ── Hook question ── */
+    .hook-question {
+      position: relative;
+      z-index: 1;
+      font-weight: 900;
+      color: var(--text);
+      letter-spacing: -0.025em;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      animation: fadeUp 0.32s cubic-bezier(0.16,1,0.3,1) 0.04s both;
+      will-change: transform;
+    }
+
+    body:not([data-format="square"]) .hook-question {
+      font-size: clamp(26px, 7vw, 34px);
+      line-height: 1.15;
+    }
+
+    body[data-format="square"] .hook-question {
+      font-size: clamp(22px, 5.8vw, 28px);
+      line-height: 1.18;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Bottom section ── */
+    .bottom-section { flex-shrink: 0; }
+
+    /* ── Gold accent rule ── */
+    .accent-rule {
+      width: 40px;
+      height: 3px;
+      background: var(--accent);
+      border-radius: 2px;
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    body:not([data-format="square"]) .accent-rule { margin: 0 0 20px; }
+    body[data-format="square"]       .accent-rule { margin: 0 0 10px; }
+
+    /* ── Section header ── */
+    .section-header {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.20em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    body:not([data-format="square"]) .section-header { margin-bottom: 10px; }
+    body[data-format="square"]       .section-header { margin-bottom: 6px; }
+
+    /* ── Answer points ── */
+    .points-list { display: flex; flex-direction: column; }
+
+    .point-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      border-top: 1px solid var(--border-faint);
+      will-change: transform;
+      animation: fadeUp 0.32s cubic-bezier(0.16,1,0.3,1) calc(var(--i, 1) * 0.08s) both;
+    }
+
+    body:not([data-format="square"]) .point-row { padding: 11px 0; }
+    body[data-format="square"]       .point-row { padding: 7px 0; }
+
+    .point-row:last-of-type { border-bottom: 1px solid var(--border-faint); }
+
+    .point-num {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      min-width: 22px;
+      padding-top: 3px;
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+
+    .point-text {
+      color: var(--text-body);
+      font-weight: 400;
+    }
+
+    body:not([data-format="square"]) .point-text { font-size: 16px; line-height: 1.65; }
+    body[data-format="square"]       .point-text { font-size: 13px; line-height: 1.55; }
+
+    body:not([data-format="square"]) .point-row:first-child .point-text { font-size: 18px; line-height: 1.7; }
+    body[data-format="square"]       .point-row:first-child .point-text { font-size: 14px; line-height: 1.6; }
+
+    /* ── Footer ── */
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border-faint);
+    }
+
+    body:not([data-format="square"]) .footer { padding-top: 16px; margin-top: 18px; }
+    body[data-format="square"]       .footer { padding-top: 8px;  margin-top: 10px; }
+
+    .footer-source {
+      font-size: 12px;
+      color: var(--text-dim);
+      letter-spacing: 0.04em;
+    }
+
+    .footer-badge {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      color: var(--accent);
+      border: 1px solid rgba(212,184,72,0.26);
+      border-radius: 3px;
+      padding: 3px 9px;
+      box-shadow: inset 0 1px 0 rgba(212,184,72,0.06);
+    }
+
+    /* === WATERMARK === */
+    .watermark-overlay {
+      position: fixed;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      pointer-events: none;
+    }
+    .watermark-top-left     { top: 16px; left: 16px; }
+    .watermark-top-right    { top: 16px; right: 16px; }
+    .watermark-bottom-left  { bottom: 16px; left: 16px; }
+    .watermark-bottom-right { bottom: 16px; right: 16px; }
+    .watermark-img { max-height: 80px; max-width: 200px; object-fit: contain; display: block; }
+    .watermark-text {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-shadow: 0 1px 4px rgba(12,12,12,0.9);
+      letter-spacing: 0.02em;
+    }
+
+    /* === THREAD BADGE === */
+    .thread-badge {
+      position: fixed;
+      top: 12px; right: 12px;
+      z-index: 200;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+      background: rgba(12,12,12,0.90);
+      border: 1px solid rgba(212,184,72,0.22);
+      border-radius: 20px;
+      padding: 4px 12px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+  </style>
+</head>
+<body data-format="{{ format }}">
+  {% if thread_index %}
+  <div class="thread-badge">{{ thread_index }} / {{ thread_total }}</div>
+  {% endif %}
+
+  <div class="page">
+    <div class="top-bar">
+      <span class="top-label">觀點切入</span>
+      <div class="top-rule"></div>
+      <span class="top-badge">DEEP DIVE</span>
+    </div>
+
+    <!-- Question fills middle space -->
+    <div class="hook-mid">
+      <div class="deco-char" aria-hidden="true">?</div>
+      <h1 class="hook-question">{{ title }}</h1>
+    </div>
+
+    <!-- Points anchored to bottom -->
+    <div class="bottom-section">
+      <div class="accent-rule"></div>
+      <div class="section-header">深度解析</div>
+      <div class="points-list">
+        {% for point in key_points %}
+        <div class="point-row" style="--i: {{ loop.index }};">
+          <div class="point-num">{{ "%02d"|format(loop.index) }}</div>
+          <div class="point-text">{{ point.text }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="footer">
+        <div class="footer-source">{% if source %}{{ source }}{% else %}深度分析{% endif %}</div>
+        <div class="footer-badge">NOZOMI</div>
+      </div>
+    </div>
+  </div>
+
+  {% if watermark_data or brand_name %}
+  <div class="watermark-overlay watermark-{{ watermark_position }}">
+    {% if watermark_data %}<img class="watermark-img" src="{{ watermark_data }}" alt="" style="opacity: {{ watermark_opacity }};" />{% endif %}
+    {% if brand_name %}<span class="watermark-text" style="opacity: {{ watermark_opacity }};">{{ brand_name }}</span>{% endif %}
+  </div>
+  {% endif %}
+</body>
+</html>

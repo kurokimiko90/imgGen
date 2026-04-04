@@ -8,8 +8,9 @@ import { PreviewPanel } from '@/features/generate/PreviewPanel'
 import { ExtractedContentEditor } from '@/features/generate/ExtractedContentEditor'
 import { useGenerateStore } from '@/stores/useGenerateStore'
 import { useGenerate, useGenerateMulti } from '@/api/queries'
-import { Sparkles, Layers, Zap } from 'lucide-react'
+import { Sparkles, Layers, Zap, AlertCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useState } from 'react'
 
 type GenerateMode = 'card' | 'article' | 'smart'
 
@@ -31,6 +32,7 @@ export function GeneratePage() {
   const store = useGenerateStore()
   const generate = useGenerate()
   const generateMulti = useGenerateMulti()
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const handleGenerate = () => {
     const params = {
@@ -53,13 +55,16 @@ export function GeneratePage() {
 
     store.setGenerating(true)
     store.clearResult()
+    setErrorMsg(null)
 
     generate.mutate(params, {
       onSuccess: (data) => {
         store.setResult(data.image_url, data.title, data.extracted_data, data.history_id)
       },
-      onError: () => {
+      onError: (err: unknown) => {
         store.setGenerating(false)
+        const msg = err instanceof Error ? err.message : '生成失敗，請檢查設定後重試'
+        setErrorMsg(msg)
       },
     })
   }
@@ -85,6 +90,7 @@ export function GeneratePage() {
 
     store.setGenerating(true)
     store.clearResult()
+    setErrorMsg(null)
 
     generateMulti.mutate(params, {
       onSuccess: (data) => {
@@ -95,8 +101,10 @@ export function GeneratePage() {
           store.setGenerating(false)
         }
       },
-      onError: () => {
+      onError: (err: unknown) => {
         store.setGenerating(false)
+        const msg = err instanceof Error ? err.message : '生成失敗，請檢查設定後重試'
+        setErrorMsg(msg)
       },
     })
   }
@@ -237,6 +245,21 @@ export function GeneratePage() {
             All Formats
           </button>
         </div>
+
+        {/* Error banner */}
+        <AnimatePresence>
+          {errorMsg && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="flex items-start gap-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400"
+            >
+              <AlertCircle size={16} className="mt-0.5 shrink-0" />
+              <span>{errorMsg}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Result Section */}

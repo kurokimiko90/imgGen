@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=430" />
+  <title>{{ title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Serif+TC:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    /*
+     * studio.html — Minimal Studio
+     * DESIGN_VARIANCE=8 / MOTION_INTENSITY=6 / VISUAL_DENSITY=4
+     * Palette: warm-white #F8F6F2 · forest-green #2C5F2E · ink #1C1A17
+     */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #F8F6F2;
+      --accent:     #2C5F2E;
+      --text:       #1C1A17;
+      --text-mid:   #7A7570;
+      --line:       #D8D4CE;
+      --shadow:     rgba(44,95,46,0.06);
+    }
+
+    html, body {
+      width: 100%;
+      height: 430px;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: 'Outfit', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      width: 430px;
+      height: 430px;
+      padding: 20px 24px 18px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* === HEADER === */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      flex-shrink: 0;
+    }
+
+    .studio-badge {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.20em;
+      text-transform: uppercase;
+      color: var(--text-mid);
+      border: 0.5px solid var(--line);
+      border-radius: 2px;
+      padding: 2px 7px;
+    }
+
+    .header-source {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-mid);
+      letter-spacing: 0.04em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 180px;
+    }
+
+    /* 1px top rule */
+    .rule-top {
+      width: 100%;
+      height: 1px;
+      background: var(--line);
+      margin-bottom: 14px;
+      flex-shrink: 0;
+    }
+
+    /* === TITLE === */
+    .title-section {
+      margin-bottom: 14px;
+      flex-shrink: 0;
+    }
+
+    .main-title {
+      font-family: 'Noto Serif TC', Georgia, serif;
+      font-size: clamp(18px, 5vw, 22px);
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.4;
+      letter-spacing: 0.01em;
+      word-break: break-word;
+      will-change: transform;
+      animation: fadeUp 0.32s cubic-bezier(0.16,1,0.3,1) 0.04s both;
+    }
+
+    /* 3px accent rule */
+    .rule-accent {
+      width: 40px;
+      height: 3px;
+      background: var(--accent);
+      border-radius: 1px;
+      margin-top: 10px;
+    }
+
+    /* === POINTS === */
+    .points-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+      gap: 0;
+    }
+
+    .point-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line);
+      will-change: transform;
+      animation: fadeUp 0.32s cubic-bezier(0.16,1,0.3,1) calc(var(--i, 1) * 0.08s + 0.08s) both;
+    }
+
+    .point-row:first-child { border-top: 1px solid var(--line); }
+
+    /* Circle bullet */
+    .bullet {
+      flex-shrink: 0;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-top: 6px;
+    }
+
+    .point-text {
+      font-family: 'Noto Serif TC', Georgia, serif;
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text-mid);
+      font-weight: 400;
+      word-break: break-word;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* === FOOTER === */
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 10px;
+      margin-top: 10px;
+      flex-shrink: 0;
+    }
+
+    .footer-label {
+      font-size: 10px;
+      color: var(--text-mid);
+      letter-spacing: 0.04em;
+    }
+
+    .nozomi-mark {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 0.5px solid var(--line);
+      border-radius: 2px;
+      padding: 2px 7px;
+    }
+
+    /* === WATERMARK === */
+    .watermark-overlay {
+      position: fixed; z-index: 100; display: flex;
+      flex-direction: column; align-items: center; gap: 6px; pointer-events: none;
+    }
+    .watermark-top-left     { top: 16px; left: 16px; }
+    .watermark-top-right    { top: 16px; right: 16px; }
+    .watermark-bottom-left  { bottom: 16px; left: 16px; }
+    .watermark-bottom-right { bottom: 16px; right: 16px; }
+    .watermark-img { max-height: 80px; max-width: 200px; object-fit: contain; display: block; }
+    .watermark-text {
+      font-size: 16px; font-weight: 600;
+      color: var(--text-mid);
+      text-shadow: 0 1px 3px rgba(28,26,23,0.12);
+      letter-spacing: 0.02em;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <span class="studio-badge">STUDIO · NO.{{ "%02d"|format(thread_index if thread_index else 1) }}</span>
+      <span class="header-source">{% if source %}{{ source }}{% else %}NOZOMI STUDIO{% endif %}</span>
+    </div>
+
+    <div class="rule-top"></div>
+
+    <div class="title-section">
+      <h1 class="main-title">{{ title }}</h1>
+      <div class="rule-accent"></div>
+    </div>
+
+    <div class="points-list">
+      {% for point in key_points %}
+      <div class="point-row" style="--i: {{ loop.index }};">
+        <div class="bullet"></div>
+        <div class="point-text">{{ point.text }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="footer">
+      <span class="footer-label">深度閱讀摘要</span>
+      <span class="nozomi-mark">NOZOMI</span>
+    </div>
+  </div>
+
+  {% if watermark_data or brand_name %}
+  <div class="watermark-overlay watermark-{{ watermark_position }}">
+    {% if watermark_data %}<img class="watermark-img" src="{{ watermark_data }}" alt="" style="opacity: {{ watermark_opacity }};" />{% endif %}
+    {% if brand_name %}<span class="watermark-text" style="opacity: {{ watermark_opacity }};">{{ brand_name }}</span>{% endif %}
+  </div>
+  {% endif %}
+</body>
+</html>

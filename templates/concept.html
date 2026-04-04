@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=430" />
+  <title>{{ title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Serif+TC:wght@400;600;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /*
+     * concept.html — Definition Card
+     * DESIGN_VARIANCE=8 / MOTION_INTENSITY=6 / VISUAL_DENSITY=4
+     * Palette: warm-cream #F5F3EF · steel-blue #1C5282 · ink #1A1814
+     * New visual × Concept/Definition content type
+     * Data: title = "概念名｜英文名"; key_points[0]=定義句; [1..3]=維度(標籤｜說明)
+     */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #F5F3EF;
+      --text:         #1A1814;
+      --text-mid:     #726860;
+      --text-dim:     #A09888;
+      --accent:       #1C5282;
+      --accent-dim:   rgba(28,82,130,0.08);
+      --def-bg:       rgba(28,82,130,0.05);
+      --line:         #D8D2CA;
+      --bar:          #1C5282;
+    }
+
+    html, body {
+      width: 100%;
+      height: 430px;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: 'Outfit', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      position: relative;
+      width: 430px; height: 430px;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* === LEFT COLOR BAR (full height) === */
+    .concept-bar {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      background: var(--bar);
+      border-radius: 0 2px 2px 0;
+      z-index: 1;
+    }
+
+    /* === CONTENT (left-padded from bar) === */
+    .content {
+      position: relative; z-index: 1;
+      flex: 1; display: flex; flex-direction: column;
+      padding: 18px 20px 14px 22px;
+      overflow: hidden;
+    }
+
+    /* === HEADER === */
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px; flex-shrink: 0;
+    }
+    .badge {
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.20em; text-transform: uppercase;
+      color: var(--accent);
+    }
+    .header-source { font-size: 10px; color: var(--text-dim); letter-spacing: 0.06em; }
+
+    .top-rule { height: 1px; background: var(--line); margin-bottom: 14px; flex-shrink: 0; }
+
+    /* === CONCEPT NAME === */
+    .concept-name-block { flex-shrink: 0; margin-bottom: 12px; }
+    .concept-zh {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(26px, 7vw, 34px);
+      font-weight: 800; line-height: 1.10;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+      will-change: transform;
+      animation: fadeUp 0.40s cubic-bezier(0.16,1,0.3,1) 0.04s both;
+    }
+    .concept-en {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 12px; font-weight: 500;
+      color: var(--text-mid); letter-spacing: 0.06em;
+      margin-top: 3px;
+    }
+
+    /* === DEFINITION BOX === */
+    .def-box {
+      background: var(--def-bg);
+      border: 1px solid rgba(28,82,130,0.12);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 6px 6px 0;
+      padding: 10px 13px;
+      margin-bottom: 12px;
+      flex-shrink: 0;
+      will-change: transform;
+      animation: fadeUp 0.36s cubic-bezier(0.16,1,0.3,1) 0.14s both;
+    }
+    .def-text {
+      font-family: 'Noto Serif TC', Georgia, serif;
+      font-size: 13px; line-height: 1.68;
+      color: var(--text); font-weight: 400;
+      word-break: break-word;
+    }
+
+    /* === DIMENSIONS === */
+    .dim-label {
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--text-dim); margin-bottom: 6px; flex-shrink: 0;
+    }
+    .dim-list { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+
+    .dim-row {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 6px 0;
+      border-top: 1px solid var(--line);
+      will-change: transform;
+      animation: fadeUp 0.30s cubic-bezier(0.16,1,0.3,1) calc(var(--i, 1) * 0.08s + 0.20s) both;
+    }
+    .dim-row:last-of-type { border-bottom: 1px solid var(--line); }
+
+    /* CSS square bullet (no emoji) */
+    .dim-bullet {
+      width: 5px; height: 5px;
+      background: var(--accent);
+      border-radius: 1px;
+      flex-shrink: 0; margin-top: 5px;
+      opacity: 0.65;
+    }
+
+    .dim-content { flex: 1; min-width: 0; }
+    .dim-tag {
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.10em; text-transform: uppercase;
+      color: var(--accent); display: inline;
+      margin-right: 5px;
+    }
+    .dim-desc {
+      font-size: 12px; line-height: 1.55;
+      color: var(--text-mid); display: inline;
+    }
+
+    .spacer { flex: 1; min-height: 4px; }
+
+    /* === FOOTER === */
+    .footer {
+      display: flex; align-items: center; justify-content: space-between;
+      border-top: 1px solid var(--line);
+      padding-top: 8px; margin-top: 6px; flex-shrink: 0;
+    }
+    .footer-label { font-size: 10px; color: var(--text-dim); letter-spacing: 0.04em; }
+    .nozomi-mark {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--accent);
+      border: 0.5px solid rgba(28,82,130,0.22);
+      border-radius: 2px; padding: 2px 7px;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* === WATERMARK === */
+    .watermark-overlay {
+      position: fixed; z-index: 100; display: flex;
+      flex-direction: column; align-items: center; gap: 6px; pointer-events: none;
+    }
+    .watermark-top-left     { top: 16px; left: 16px; }
+    .watermark-top-right    { top: 16px; right: 16px; }
+    .watermark-bottom-left  { bottom: 16px; left: 16px; }
+    .watermark-bottom-right { bottom: 16px; right: 16px; }
+    .watermark-img { max-height: 80px; max-width: 200px; object-fit: contain; display: block; }
+    .watermark-text {
+      font-size: 16px; font-weight: 600;
+      color: var(--text-mid);
+      text-shadow: 0 1px 3px rgba(26,24,20,0.10);
+      letter-spacing: 0.02em;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="concept-bar"></div>
+    <div class="content">
+      <div class="header">
+        <span class="badge">CONCEPT</span>
+        <span class="header-source">{% if source %}{{ source }}{% else %}NOZOMI DEFINES{% endif %}</span>
+      </div>
+      <div class="top-rule"></div>
+
+      {% set title_parts = title.split('｜') %}
+      <div class="concept-name-block">
+        <div class="concept-zh">{{ title_parts[0] }}</div>
+        {% if title_parts | length > 1 %}
+        <div class="concept-en">{{ title_parts[1] }}</div>
+        {% endif %}
+      </div>
+
+      {% if key_points and key_points[0] %}
+      <div class="def-box">
+        <div class="def-text">{{ key_points[0].text }}</div>
+      </div>
+      {% endif %}
+
+      {% if key_points | length > 1 %}
+      <div class="dim-label">關鍵維度</div>
+      <div class="dim-list">
+        {% for point in key_points[1:] %}
+        {% set parts = point.text.split('｜') %}
+        <div class="dim-row" style="--i: {{ loop.index }};">
+          <div class="dim-bullet"></div>
+          <div class="dim-content">
+            {% if parts | length > 1 %}
+            <span class="dim-tag">{{ parts[0] }}</span>
+            <span class="dim-desc">{{ parts[1] }}</span>
+            {% else %}
+            <span class="dim-desc">{{ point.text }}</span>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="spacer"></div>
+
+      <div class="footer">
+        <span class="footer-label">概念解釋卡</span>
+        <span class="nozomi-mark">NOZOMI</span>
+      </div>
+    </div>
+  </div>
+
+  {% if watermark_data or brand_name %}
+  <div class="watermark-overlay watermark-{{ watermark_position }}">
+    {% if watermark_data %}<img class="watermark-img" src="{{ watermark_data }}" alt="" style="opacity: {{ watermark_opacity }};" />{% endif %}
+    {% if brand_name %}<span class="watermark-text" style="opacity: {{ watermark_opacity }};">{{ brand_name }}</span>{% endif %}
+  </div>
+  {% endif %}
+</body>
+</html>

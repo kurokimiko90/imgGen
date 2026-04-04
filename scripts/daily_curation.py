@@ -15,6 +15,8 @@ import asyncio
 import json
 import os
 import re
+import shutil
+import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -23,8 +25,6 @@ import click
 
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
-
-import anthropic
 
 from src.config import LevelUpConfig
 from src.content import AccountType, Content, ContentStatus, ContentType
@@ -65,28 +65,28 @@ def _load_prompt(prompt_file: str, item: RawItem) -> str:
     )
 
 
-def call_claude_api(prompt_file: str, item: RawItem) -> dict:
-    """Call Claude API with account-specific prompt and return parsed JSON.
+def call_claude_api(prompt_file: str, item: RawItem, provider: str = "cli") -> dict:
+    """Call Claude to curate content and return parsed JSON decision.
+
+    Args:
+        prompt_file: Path to account-specific prompt template
+        item: RawItem from scraper
+        provider: "cli" (default, no API key needed) or "claude" (requires ANTHROPIC_API_KEY)
+
+    Returns:
+        Dict with keys: should_publish, title, body, content_type, reasoning
 
     Raises:
-        ValueError: If the response cannot be parsed as valid JSON with
-                    required fields.
+        ValueError: If the response cannot be parsed as valid JSON with required fields.
+        RuntimeError: If claude CLI is not found (when provider="cli")
     """
-    client = anthropic.Anthropic()
     prompt = _load_prompt(prompt_file, item)
-
-    message = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=1024,
-        messages=[{"role": "user", "content": prompt}],
-    )
-
-    raw = message.content[0].text
+    raw = _call_claude(prompt, provider=provider)
 
     # Extract JSON from response (may have surrounding text)
     match = re.search(r"\{.*\}", raw, re.DOTALL)
     if not match:
-        raise ValueError(f"No JSON found in Claude response: {raw[:200]}")
+        raise ValueError(f"No JSON found in response: {raw[:200]}")
 
     data = json.loads(match.group())
     if "should_publish" not in data:
@@ -95,6 +95,81 @@ def call_claude_api(prompt_file: str, item: RawItem) -> dict:
         raise ValueError("reasoning field is empty but should_publish=true")
 
     return data
+
+
+def _call_claude(prompt: str, provider: str = "cli", model: str = "haiku") -> str:
+    """Call Claude via CLI or API and return raw text response.
+
+    Args:
+        prompt: Full prompt for Claude
+        provider: "cli" (default) or "claude"
+        model: Model variant — "haiku" or "sonnet"
+
+    Returns:
+        Raw text response from Claude
+
+    Raises:
+        RuntimeError: If CLI not found or execution fails
+        ValueError: If provider is unknown
+    """
+    if provider == "cli":
+        # Use Claude Code CLI — no API key needed
+        claude_cli = shutil.which("claude")
+        if not claude_cli:
+            raise RuntimeError(
+                "claude CLI not found. Install via: https://claude.ai/code"
+            )
+
+        # Filter env to avoid interfering with claude CLI's auth
+        env = {
+            k: v for k, v in os.environ.items()
+            if k not in {"CLAUDECODE", "ANTHROPIC_API_KEY"}
+        }
+
+        result = subprocess.run(
+            [claude_cli, "-p", "--output-format", "text", "--model", model],
+            input=prompt,
+            capture_output=True,
+            text=True,
+            timeout=60,
+            env=env,
+        )
+
+        if result.returncode != 0:
+            raise RuntimeError(f"claude CLI failed: {result.stderr.strip()}")
+
+        return result.stdout.strip()
+
+    elif provider == "claude":
+        # Use Anthropic API — requires ANTHROPIC_API_KEY env var
+        import anthropic
+
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if not api_key or api_key == "your_anthropic_key_here":
+            raise ValueError(
+                "ANTHROPIC_API_KEY env var not set or is placeholder. "
+                "Use provider='cli' instead to avoid needing an API key."
+            )
+
+        client = anthropic.Anthropic(api_key=api_key)
+
+        # Map haiku/sonnet to full model IDs
+        model_map = {
+            "haiku": "claude-haiku-4-5-20251001",
+            "sonnet": "claude-sonnet-4-6",
+        }
+        full_model = model_map.get(model, "claude-haiku-4-5-20251001")
+
+        message = client.messages.create(
+            model=full_model,
+            max_tokens=1024,
+            messages=[{"role": "user", "content": prompt}],
+        )
+
+        return message.content[0].text
+
+    else:
+        raise ValueError(f"Unknown provider: {provider}. Use 'cli' or 'claude'.")
 
 
 def generate_image(body: str, theme: str, account_type: str) -> str | None:
@@ -110,7 +185,7 @@ def generate_image(body: str, theme: str, account_type: str) -> str | None:
         options = PipelineOptions(
             theme=theme,
             format="story",
-            provider="claude",
+            provider="cli",  # Use Claude Code CLI by default (no API key needed)
             mode="smart",
             color_mood=theme,
         )

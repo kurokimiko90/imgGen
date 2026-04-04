@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=430" />
+  <title>{{ title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /*
+     * ranking.html — Numbered Impact
+     * DESIGN_VARIANCE=8 / MOTION_INTENSITY=6 / VISUAL_DENSITY=4
+     * Palette: warm-parchment #F6F4F0 · amber #C4540A · text #1E1C18
+     * New visual × Ranking / Top-N content type
+     */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #F6F4F0;
+      --text:        #1E1C18;
+      --text-mid:    #7A7060;
+      --text-dim:    #A89880;
+      --accent-1:    #C4540A;
+      --accent-2:    #8A5C3A;
+      --accent-3:    #B07848;
+      --line:        #DED8D0;
+      --shadow:      rgba(196,84,10,0.06);
+    }
+
+    html, body {
+      width: 100%;
+      height: 430px;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: 'Outfit', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      width: 430px;
+      height: 430px;
+      padding: 16px 20px 14px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* === HEADER === */
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 4px; flex-shrink: 0;
+    }
+    .badge {
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.20em; text-transform: uppercase;
+      color: var(--accent-1);
+      border: 1px solid rgba(196,84,10,0.22);
+      border-radius: 2px;
+      padding: 2px 8px;
+    }
+    .header-source {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10px; color: var(--text-dim); letter-spacing: 0.06em;
+    }
+
+    .top-rule { height: 1px; background: var(--line); margin: 8px 0 10px; flex-shrink: 0; }
+
+    /* === MAIN TITLE === */
+    .main-title {
+      font-family: 'Noto Sans TC', system-ui, sans-serif;
+      font-size: clamp(16px, 4.4vw, 20px);
+      font-weight: 700; line-height: 1.30;
+      color: var(--text); word-break: break-word;
+      flex-shrink: 0; margin-bottom: 10px;
+      will-change: transform;
+      animation: fadeUp 0.36s cubic-bezier(0.16,1,0.3,1) 0.04s both;
+    }
+
+    .divider { height: 1px; background: var(--line); margin-bottom: 8px; flex-shrink: 0; }
+
+    /* === RANK LIST === */
+    .rank-list { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+
+    .rank-row {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 6px 0;
+      border-top: 1px solid var(--line);
+      will-change: transform;
+      animation: fadeUp 0.30s cubic-bezier(0.16,1,0.3,1) calc(var(--i, 1) * 0.07s + 0.08s) both;
+    }
+    .rank-row:last-of-type { border-bottom: 1px solid var(--line); }
+
+    .rank-num {
+      font-family: 'Roboto Mono', monospace;
+      font-weight: 700; line-height: 1.1;
+      flex-shrink: 0; min-width: 36px;
+      padding-top: 2px;
+    }
+    .rank-row:nth-child(1) .rank-num { font-size: 26px; color: var(--accent-1); }
+    .rank-row:nth-child(2) .rank-num { font-size: 22px; color: var(--accent-2); }
+    .rank-row:nth-child(3) .rank-num { font-size: 18px; color: var(--accent-3); }
+    .rank-row:nth-child(n+4) .rank-num { font-size: 15px; color: var(--text-dim); }
+
+    .rank-content { flex: 1; min-width: 0; }
+
+    .rank-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px; font-weight: 600;
+      color: var(--text); line-height: 1.3;
+      word-break: break-word;
+    }
+    .rank-row:nth-child(n+4) .rank-name { font-size: 13px; }
+
+    .rank-desc {
+      font-size: 11px; color: var(--text-mid);
+      line-height: 1.45; margin-top: 1px;
+      word-break: break-word;
+    }
+    .rank-row:nth-child(n+4) .rank-desc { display: none; }
+
+    .spacer { flex: 1; min-height: 4px; }
+
+    /* === FOOTER === */
+    .footer {
+      display: flex; align-items: center; justify-content: space-between;
+      border-top: 1px solid var(--line);
+      padding-top: 8px; margin-top: 6px; flex-shrink: 0;
+    }
+    .footer-left { font-size: 10px; color: var(--text-mid); letter-spacing: 0.04em; }
+    .footer-badge {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--accent-1);
+      border: 0.5px solid rgba(196,84,10,0.22);
+      border-radius: 2px; padding: 2px 7px;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* === WATERMARK === */
+    .watermark-overlay {
+      position: fixed; z-index: 100; display: flex;
+      flex-direction: column; align-items: center; gap: 6px; pointer-events: none;
+    }
+    .watermark-top-left     { top: 16px; left: 16px; }
+    .watermark-top-right    { top: 16px; right: 16px; }
+    .watermark-bottom-left  { bottom: 16px; left: 16px; }
+    .watermark-bottom-right { bottom: 16px; right: 16px; }
+    .watermark-img { max-height: 80px; max-width: 200px; object-fit: contain; display: block; }
+    .watermark-text {
+      font-size: 16px; font-weight: 600;
+      color: var(--text-mid);
+      text-shadow: 0 1px 3px rgba(30,28,24,0.10);
+      letter-spacing: 0.02em;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <span class="badge">TOP {{ key_points | length }}</span>
+      <span class="header-source">{% if source %}{{ source }}{% else %}NOZOMI PICKS{% endif %}</span>
+    </div>
+    <div class="top-rule"></div>
+
+    <div class="main-title">{{ title }}</div>
+    <div class="divider"></div>
+
+    <div class="rank-list">
+      {% for point in key_points %}
+      {% set parts = point.text.split('｜') %}
+      <div class="rank-row" style="--i: {{ loop.index }};">
+        <div class="rank-num">#{{ "%02d"|format(loop.index) }}</div>
+        <div class="rank-content">
+          <div class="rank-name">{{ parts[0] }}</div>
+          {% if parts | length > 1 %}
+          <div class="rank-desc">{{ parts[1] }}</div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="footer">
+      <span class="footer-left">NOZOMI RANKED</span>
+      <span class="footer-badge">CURATED</span>
+    </div>
+  </div>
+
+  {% if watermark_data or brand_name %}
+  <div class="watermark-overlay watermark-{{ watermark_position }}">
+    {% if watermark_data %}<img class="watermark-img" src="{{ watermark_data }}" alt="" style="opacity: {{ watermark_opacity }};" />{% endif %}
+    {% if brand_name %}<span class="watermark-text" style="opacity: {{ watermark_opacity }};">{{ brand_name }}</span>{% endif %}
+  </div>
+  {% endif %}
+</body>
+</html>

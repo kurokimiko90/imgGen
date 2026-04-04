@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=430" />
+  <title>{{ title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /*
+     * picks.html — Curated List
+     * DESIGN_VARIANCE=8 / MOTION_INTENSITY=6 / VISUAL_DENSITY=4
+     * Palette: ivory #FAF8F4 · amber #A05A20 · ink #1C1A16
+     * New visual × Curated Recommendations content type
+     * Data: key_points[n].text = "星數(1-4)|條目名稱|一句話說明"
+     */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #FAF8F4;
+      --text:     #1C1A16;
+      --text-mid: #7A7060;
+      --text-dim: #A89880;
+      --accent:   #A05A20;
+      --card-bg:  #FAF8F4;
+      --card-bdr: rgba(160,90,32,0.14);
+      --line:     #E0D8CE;
+    }
+
+    html, body {
+      width: 100%;
+      height: 430px;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: 'Outfit', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      width: 430px; height: 430px;
+      padding: 16px 20px 14px;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* === HEADER === */
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 4px; flex-shrink: 0;
+    }
+    .badge {
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.20em; text-transform: uppercase;
+      color: var(--accent);
+    }
+    .header-stars {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 12px; color: var(--accent);
+      letter-spacing: 0.10em;
+    }
+
+    .top-rule { height: 1px; background: var(--line); margin: 8px 0 10px; flex-shrink: 0; }
+
+    /* === TITLE === */
+    .main-title {
+      font-family: 'Noto Sans TC', system-ui, sans-serif;
+      font-size: clamp(15px, 4.2vw, 18px);
+      font-weight: 700; line-height: 1.35;
+      color: var(--text); word-break: break-word;
+      flex-shrink: 0; margin-bottom: 10px;
+      will-change: transform;
+      animation: fadeUp 0.36s cubic-bezier(0.16,1,0.3,1) 0.04s both;
+    }
+
+    /* === PICKS LIST === */
+    .picks-list { display: flex; flex-direction: column; gap: 6px; flex: 1; min-height: 0; overflow: hidden; }
+
+    .pick-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-bdr);
+      border-radius: 7px;
+      padding: 8px 12px;
+      display: flex; align-items: flex-start; gap: 10px;
+      box-shadow: 0 2px 8px rgba(28,26,22,0.06);
+      will-change: transform;
+      animation: fadeUp 0.30s cubic-bezier(0.16,1,0.3,1) calc(var(--i, 1) * 0.08s + 0.08s) both;
+      flex-shrink: 0;
+    }
+
+    .pick-stars {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 11px; color: var(--accent);
+      flex-shrink: 0; min-width: 40px;
+      padding-top: 2px; letter-spacing: 0.04em;
+    }
+
+    .pick-content { flex: 1; min-width: 0; }
+    .pick-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px; font-weight: 600;
+      color: var(--text); line-height: 1.28;
+      word-break: break-word;
+    }
+    .pick-desc {
+      font-size: 11px; color: var(--text-mid);
+      line-height: 1.45; margin-top: 2px;
+      word-break: break-word;
+    }
+
+    .spacer { flex: 1; min-height: 4px; }
+
+    /* === FOOTER === */
+    .footer {
+      display: flex; align-items: center; justify-content: space-between;
+      border-top: 1px solid var(--line);
+      padding-top: 8px; margin-top: 6px; flex-shrink: 0;
+    }
+    .footer-source { font-size: 10px; color: var(--text-mid); letter-spacing: 0.04em; max-width: 70%; }
+    .nozomi-mark {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--accent);
+      border: 0.5px solid var(--card-bdr);
+      border-radius: 2px; padding: 2px 7px;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* === WATERMARK === */
+    .watermark-overlay {
+      position: fixed; z-index: 100; display: flex;
+      flex-direction: column; align-items: center; gap: 6px; pointer-events: none;
+    }
+    .watermark-top-left     { top: 16px; left: 16px; }
+    .watermark-top-right    { top: 16px; right: 16px; }
+    .watermark-bottom-left  { bottom: 16px; left: 16px; }
+    .watermark-bottom-right { bottom: 16px; right: 16px; }
+    .watermark-img { max-height: 80px; max-width: 200px; object-fit: contain; display: block; }
+    .watermark-text {
+      font-size: 16px; font-weight: 600;
+      color: var(--text-mid);
+      text-shadow: 0 1px 3px rgba(28,26,22,0.10);
+      letter-spacing: 0.02em;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <span class="badge">PICKS</span>
+      <span class="header-stars">&#x2605;&#x2605;&#x2605;</span>
+    </div>
+    <div class="top-rule"></div>
+
+    <div class="main-title">{{ title }}</div>
+
+    <div class="picks-list">
+      {% for point in key_points %}
+      {% set parts = point.text.split('|') %}
+      <div class="pick-card" style="--i: {{ loop.index }};">
+        <div class="pick-stars">
+          {% if parts | length > 0 %}
+            {% set star_count = parts[0] | int if parts[0] | int > 0 else 3 %}
+            {% for s in range(star_count) %}&#x2605;{% endfor %}
+          {% else %}&#x2605;&#x2605;&#x2605;{% endif %}
+        </div>
+        <div class="pick-content">
+          <div class="pick-name">{% if parts | length > 1 %}{{ parts[1] }}{% else %}{{ point.text }}{% endif %}</div>
+          {% if parts | length > 2 %}
+          <div class="pick-desc">{{ parts[2] }}</div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="footer">
+      <span class="footer-source">{% if source %}{{ source }}{% else %}NOZOMI 精選{% endif %}</span>
+      <span class="nozomi-mark">NOZOMI</span>
+    </div>
+  </div>
+
+  {% if watermark_data or brand_name %}
+  <div class="watermark-overlay watermark-{{ watermark_position }}">
+    {% if watermark_data %}<img class="watermark-img" src="{{ watermark_data }}" alt="" style="opacity: {{ watermark_opacity }};" />{% endif %}
+    {% if brand_name %}<span class="watermark-text" style="opacity: {{ watermark_opacity }};">{{ brand_name }}</span>{% endif %}
+  </div>
+  {% endif %}
+</body>
+</html>

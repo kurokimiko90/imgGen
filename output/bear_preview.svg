@@ -1,0 +1,17 @@
+<svg viewBox="0 0 64 56" width="256" height="224" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <!-- ears -->
+  <circle cx="14" cy="10" r="9"/>
+  <circle cx="50" cy="10" r="9"/>
+  <!-- head -->
+  <ellipse cx="32" cy="32" rx="24" ry="22"/>
+  <!-- inner ears -->
+  <circle cx="14" cy="10" r="4.5" fill="#333" opacity="0.12" stroke="none"/>
+  <circle cx="50" cy="10" r="4.5" fill="#333" opacity="0.12" stroke="none"/>
+  <!-- eyes: dot style like •  -->
+  <circle cx="22" cy="28" r="2.8" fill="#333" stroke="none"/>
+  <circle cx="42" cy="28" r="2.8" fill="#333" stroke="none"/>
+  <!-- nose ᴥ shape: inverted triangle + two bumps -->
+  <path d="M28 36 Q32 32 36 36 Q34 40 32 41 Q30 40 28 36Z" fill="#333" opacity="0.7" stroke="none"/>
+  <!-- mouth -->
+  <path d="M26 41 Q32 47 38 41" stroke-width="1.8" fill="none"/>
+</svg>

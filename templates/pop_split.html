@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=430" />
+  <title>{{ title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    /*
+     * pop_split.html — Pop Art Silk Screen
+     * DESIGN_VARIANCE=8 / MOTION_INTENSITY=6 / VISUAL_DENSITY=4
+     * Palette: coral #F5A88A | mint #A8D8C0 | blade #1A1208
+     * Double shadow: brick-red #8B2222 + deep-brown #1A1208
+     */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --left-bg:   #F5A88A;
+      --right-bg:  #A8D8C0;
+      --blade:     #1A1208;
+      --shadow-a:  #8B2222;
+      --text-on:   #1A1208;
+    }
+
+    html, body {
+      width: 100%;
+      height: 430px;
+      overflow: hidden;
+      font-family: 'Outfit', 'Noto Sans TC', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      width: 430px;
+      height: 430px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* === TITLE BAR === */
+    .title-bar {
+      background: var(--blade);
+      padding: 0 18px;
+      height: 62px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 3;
+    }
+
+    .title-text {
+      font-size: clamp(13px, 3.6vw, 17px);
+      font-weight: 900;
+      color: #F0EBE4;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      word-break: break-word;
+      flex: 1;
+      text-shadow: 2px 2px 0 var(--shadow-a);
+    }
+
+    .title-badge {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(240,235,228,0.48);
+      white-space: nowrap;
+      margin-left: 10px;
+    }
+
+    /* === SPLIT BODY === */
+    .split-body {
+      display: flex;
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Center blade — tinted deep-brown, non-pure-black */
+    .split-body::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: -6px;
+      bottom: -6px;
+      width: 7px;
+      transform: translateX(-50%) rotate(1.2deg);
+      background: var(--blade);
+      z-index: 10;
+    }
+
+    .col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 14px 13px 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .col-left  { background: var(--left-bg); }
+    .col-right { background: var(--right-bg); }
+
+    /* Halftone dot overlay */
+    .col::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(26,18,8,0.13) 1.2px, transparent 1.2px);
+      background-size: 9px 9px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .col-inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    /* Face character */
+    .face-char {
+      font-size: 46px;
+      line-height: 1.1;
+      color: var(--blade);
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+      font-family: 'Noto Sans TC', Arial, sans-serif;
+      will-change: transform;
+      animation: fadeUp 0.32s cubic-bezier(0.16,1,0.3,1) 0.06s both;
+    }
+
+    /* Pop tagline with double shadow */
+    .tagline {
+      font-size: clamp(14px, 4vw, 18px);
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      color: var(--blade);
+      text-transform: uppercase;
+      line-height: 1.05;
+      text-shadow: 2px 2px 0 var(--shadow-a), 3.5px 3.5px 0 var(--blade);
+      margin-bottom: 6px;
+      word-break: break-word;
+      will-change: transform;
+      animation: fadeUp 0.32s cubic-bezier(0.16,1,0.3,1) 0.12s both;
+    }
+
+    /* Description */
+    .col-desc {
+      font-size: 12px;
+      line-height: 1.5;
+      color: rgba(26,18,8,0.68);
+      font-weight: 500;
+      word-break: break-word;
+      margin-top: auto;
+      padding-top: 6px;
+      will-change: transform;
+      animation: fadeUp 0.32s cubic-bezier(0.16,1,0.3,1) 0.20s both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* === FOOTER BAR === */
+    .footer-bar {
+      display: flex;
+      align-items: stretch;
+      height: 44px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 3;
+    }
+
+    .footer-left-cell {
+      flex: 1;
+      background: var(--left-bg);
+      padding: 0 13px;
+      display: flex;
+      align-items: center;
+      border-top: 3px solid var(--blade);
+      border-right: 3px solid var(--blade);
+    }
+
+    .footer-right-cell {
+      flex: 1;
+      background: var(--right-bg);
+      padding: 0 13px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      border-top: 3px solid var(--blade);
+    }
+
+    .footer-source {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(26,18,8,0.50);
+    }
+
+    .nozomi-stamp {
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--blade);
+      text-shadow: 1px 1px 0 var(--shadow-a);
+    }
+
+    /* === WATERMARK === */
+    .watermark-overlay {
+      position: fixed; z-index: 100; display: flex;
+      flex-direction: column; align-items: center; gap: 6px; pointer-events: none;
+    }
+    .watermark-top-left     { top: 16px; left: 16px; }
+    .watermark-top-right    { top: 16px; right: 16px; }
+    .watermark-bottom-left  { bottom: 16px; left: 16px; }
+    .watermark-bottom-right { bottom: 16px; right: 16px; }
+    .watermark-img { max-height: 80px; max-width: 200px; object-fit: contain; display: block; }
+    .watermark-text {
+      font-size: 16px; font-weight: 600;
+      color: rgba(26,18,8,0.45);
+      text-shadow: 0 1px 3px rgba(26,18,8,0.15);
+      letter-spacing: 0.02em;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="title-bar">
+      <div class="title-text">{{ title }}</div>
+      <div class="title-badge">FEEL IT</div>
+    </div>
+
+    {% set left_pt  = key_points[0] if key_points | length > 0 else {'text': ''} %}
+    {% set right_pt = key_points[1] if key_points | length > 1 else {'text': ''} %}
+
+    <div class="split-body">
+      <div class="col col-left">
+        <div class="col-inner">
+          <div class="face-char">╥﹏╥</div>
+          <div class="tagline">SEND HELP.</div>
+          <div class="col-desc">{{ left_pt.text }}</div>
+        </div>
+      </div>
+      <div class="col col-right">
+        <div class="col-inner">
+          <div class="face-char">◡‿◡</div>
+          <div class="tagline">CHILL.</div>
+          <div class="col-desc">{{ right_pt.text }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      <div class="footer-left-cell">
+        <span class="footer-source">{% if source %}{{ source }}{% else %}情緒觀察{% endif %}</span>
+      </div>
+      <div class="footer-right-cell">
+        <span class="nozomi-stamp">NOZOMI</span>
+      </div>
+    </div>
+  </div>
+
+  {% if watermark_data or brand_name %}
+  <div class="watermark-overlay watermark-{{ watermark_position }}">
+    {% if watermark_data %}<img class="watermark-img" src="{{ watermark_data }}" alt="" style="opacity: {{ watermark_opacity }};" />{% endif %}
+    {% if brand_name %}<span class="watermark-text" style="opacity: {{ watermark_opacity }};">{{ brand_name }}</span>{% endif %}
+  </div>
+  {% endif %}
+</body>
+</html>

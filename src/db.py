@@ -10,6 +10,8 @@ strings in the DB and deserialized back to dicts on read.
 
 import sqlite3
 import json
+import os
+from pathlib import Path
 from src.content import Content, ContentStatus
 
 
@@ -21,7 +23,9 @@ class ContentDAO:
     """Data Access Object for Content records."""
 
     def __init__(self, db_path: str = "~/.imggen/history.db"):
-        self.db_path = db_path
+        # Expand ~ to home directory and create parent dirs if needed
+        self.db_path = os.path.expanduser(db_path)
+        Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
         self._ensure_schema()
 
     def _get_connection(self) -> sqlite3.Connection:
@@ -30,8 +34,51 @@ class ContentDAO:
         return conn
 
     def _ensure_schema(self) -> None:
-        """Idempotent schema check — assumes migration has been applied."""
-        pass
+        """Apply pending migrations idempotently."""
+        migrations_dir = Path(__file__).parent / "migrations"
+        if not migrations_dir.exists():
+            return
+
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor()
+
+            # Create migrations tracking table first (idempotent)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS _migrations (
+                    name TEXT PRIMARY KEY,
+                    applied_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.commit()
+
+            # Get all migration files sorted by name
+            migration_files = sorted(migrations_dir.glob("*.sql"))
+            for migration_file in migration_files:
+                migration_name = migration_file.name
+
+                # Check if this migration has been applied
+                cursor.execute(
+                    "SELECT 1 FROM _migrations WHERE name = ?",
+                    (migration_name,)
+                )
+                if cursor.fetchone() is None:
+                    # Apply the migration
+                    sql = migration_file.read_text(encoding="utf-8")
+                    try:
+                        cursor.executescript(sql)
+                        cursor.execute(
+                            "INSERT INTO _migrations (name) VALUES (?)",
+                            (migration_name,)
+                        )
+                        conn.commit()
+                    except sqlite3.OperationalError as e:
+                        # Allow "already exists" errors (idempotent)
+                        if "already exists" not in str(e).lower():
+                            raise
+
+        finally:
+            conn.close()
 
     def _serialize_row(self, data: dict) -> dict:
         """Convert dict fields to JSON strings for DB storage."""

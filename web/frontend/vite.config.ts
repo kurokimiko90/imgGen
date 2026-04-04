@@ -12,8 +12,8 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'http://localhost:8002',
-      '/output': 'http://localhost:8002',
+      '/api': 'http://localhost:8001',
+      '/output': 'http://localhost:8001',
     },
   },
   test: {

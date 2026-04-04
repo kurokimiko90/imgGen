@@ -112,6 +112,15 @@ class Content:
         """
         data = data.copy()
 
+        # Remove unknown fields from old database schema (url, etc)
+        valid_fields = {
+            'id', 'account_type', 'status', 'content_type', 'title', 'body',
+            'image_path', 'reasoning', 'scheduled_time', 'published_at',
+            'source_url', 'source', 'platform_status', 'engagement_data',
+            'created_at', 'updated_at'
+        }
+        data = {k: v for k, v in data.items() if k in valid_fields}
+
         # Convert string values to Enums
         if isinstance(data.get('status'), str):
             data['status'] = ContentStatus(data['status'])

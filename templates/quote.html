@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  {% if format == 'landscape' %}<meta name="viewport" content="width=768" />
+  {% elif format == 'twitter' %}<meta name="viewport" content="width=540" />
+  {% else %}<meta name="viewport" content="width=430" />{% endif %}
+  <title>{{ title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    /*
+     * quote.html — Blossom Ink
+     * DESIGN_VARIANCE=8 / MOTION_INTENSITY=6 / VISUAL_DENSITY=4
+     * Palette: blush-white #FEF2F6 · deep-rose #9D174D (sat 74%) · dark-ink #1C0B12
+     */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #FEF2F6;
+      --accent:       #9D174D;
+      --accent-soft:  rgba(157,23,77,0.10);
+      --accent-softer:rgba(157,23,77,0.06);
+      --amber-soft:   rgba(202,138,4,0.07);
+      --text-ink:     #1C0B12;
+      --text-mid:     #6B2B45;
+      --text-faint:   #B87A95;
+      --border:       rgba(157,23,77,0.12);
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body {
+      font-family: 'Outfit', 'Noto Sans TC', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text-ink);
+      position: relative;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* === BLOSSOM BACKGROUND === */
+    .bg-blossom {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 10%, rgba(157,23,77,0.13)  0%, transparent 46%),
+        radial-gradient(ellipse at 88% 80%, rgba(202,138,4,0.10)  0%, transparent 42%),
+        radial-gradient(ellipse at 5%  85%, rgba(157,23,77,0.07)  0%, transparent 38%),
+        radial-gradient(ellipse at 75% 12%, rgba(220,120,80,0.08) 0%, transparent 40%);
+      background-color: var(--bg);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* === LAYOUT === */
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 430px;
+      margin: 0 auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 28px 24px 26px;
+    }
+
+    /* === HEADER ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 36px;
+    }
+
+    .header-brand {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+    }
+
+    .header-tag {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 2px 8px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.50);
+    }
+
+    /* === TITLE CONTEXT === */
+    .context-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .context-mark {
+      width: 3px;
+      height: 18px;
+      background: linear-gradient(180deg, var(--accent), rgba(157,23,77,0.30));
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .context-text {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-mid);
+      letter-spacing: 0.03em;
+      line-height: 1.4;
+    }
+
+    /* === QUOTE BLOCK === */
+    .quote-block {
+      position: relative;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .quote-mark-open {
+      font-family: 'Noto Serif TC', Georgia, serif;
+      font-size: 96px;
+      font-weight: 900;
+      line-height: 0.7;
+      color: rgba(157,23,77,0.10);
+      letter-spacing: -0.04em;
+      margin-bottom: -8px;
+      display: block;
+      user-select: none;
+    }
+
+    .quote-text {
+      font-family: 'Noto Serif TC', Georgia, serif;
+      font-size: clamp(20px, 5.5vw, 26px);
+      font-weight: 700;
+      line-height: 1.55;
+      color: var(--text-ink);
+      letter-spacing: 0.01em;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      padding: 0 4px;
+      animation: fadeUp 0.32s cubic-bezier(0.16,1,0.3,1) 0.08s both;
+    }
+
+    .quote-mark-close {
+      font-family: 'Noto Serif TC', Georgia, serif;
+      font-size: 96px;
+      font-weight: 900;
+      line-height: 0.5;
+      color: rgba(157,23,77,0.10);
+      letter-spacing: -0.04em;
+      margin-top: 4px;
+      display: block;
+      text-align: right;
+      user-select: none;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* === ATTRIBUTION === */
+    .attribution {
+      margin-top: 28px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: fadeUp 0.32s cubic-bezier(0.16,1,0.3,1) 0.16s both;
+    }
+
+    .attr-line {
+      width: 28px;
+      height: 1px;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .attr-text {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-mid);
+      letter-spacing: 0.04em;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .spacer { flex: 1; min-height: 16px; }
+
+    /* === FOOTER === */
+    .footer {
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 16px;
+    }
+
+    .footer-label {
+      font-size: 12px;
+      color: var(--text-faint);
+      letter-spacing: 0.04em;
+    }
+
+    .nozomi-stamp {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      background: rgba(255,255,255,0.60);
+      border: 1px solid var(--border);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.70);
+      border-radius: 4px;
+      padding: 3px 9px;
+      white-space: nowrap;
+    }
+
+    /* === WATERMARK === */
+    .watermark-overlay {
+      position: fixed;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      pointer-events: none;
+    }
+    .watermark-top-left     { top: 16px; left: 16px; }
+    .watermark-top-right    { top: 16px; right: 16px; }
+    .watermark-bottom-left  { bottom: 16px; left: 16px; }
+    .watermark-bottom-right { bottom: 16px; right: 16px; }
+    .watermark-img { max-height: 80px; max-width: 200px; object-fit: contain; display: block; }
+    .watermark-text {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-mid);
+      text-shadow: 0 1px 3px rgba(255,255,255,0.7);
+      letter-spacing: 0.02em;
+    }
+
+    /* === THREAD BADGE === */
+    .thread-badge {
+      position: fixed;
+      top: 12px; right: 12px;
+      z-index: 200;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+      background: rgba(254,242,246,0.90);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 12px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+  </style>
+</head>
+<body data-format="{{ format }}">
+  {% if thread_index %}
+  <div class="thread-badge">{{ thread_index }} / {{ thread_total }}</div>
+  {% endif %}
+
+  <div class="bg-blossom"></div>
+
+  <div class="container">
+    <div class="header">
+      <span class="header-brand">NOZOMI · AI 摘要</span>
+      <span class="header-tag">QUOTE</span>
+    </div>
+
+    {% if title %}
+    <div class="context-row">
+      <div class="context-mark"></div>
+      <div class="context-text">{{ title }}</div>
+    </div>
+    {% endif %}
+
+    <div class="quote-block">
+      <span class="quote-mark-open">"</span>
+
+      {% if key_points %}
+      <div class="quote-text">{{ key_points[0].text }}</div>
+      {% endif %}
+
+      <span class="quote-mark-close">"</span>
+
+      {% if source %}
+      <div class="attribution">
+        <div class="attr-line"></div>
+        <div class="attr-text">{{ source }}</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="footer">
+      <div class="footer-label">AI 文章金句提煉</div>
+      <div class="nozomi-stamp">NOZOMI</div>
+    </div>
+  </div>
+
+  {% if watermark_data or brand_name %}
+  <div class="watermark-overlay watermark-{{ watermark_position }}">
+    {% if watermark_data %}<img class="watermark-img" src="{{ watermark_data }}" alt="" style="opacity: {{ watermark_opacity }};" />{% endif %}
+    {% if brand_name %}<span class="watermark-text" style="opacity: {{ watermark_opacity }};">{{ brand_name }}</span>{% endif %}
+  </div>
+  {% endif %}
+</body>
+</html>

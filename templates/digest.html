@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  {% if format == 'landscape' %}<meta name="viewport" content="width=768" />
+  {% elif format == 'twitter' %}<meta name="viewport" content="width=540" />
+  {% else %}<meta name="viewport" content="width=430" />{% endif %}
+  <title>Weekly Digest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    /*
+     * Digest Card — imgGen design system
+     * Typography: shared scale (--fs-title, --fs-body, --fs-secondary, --fs-label)
+     * Motion: fadeUp 0.32s stagger
+     * Shadows: tinted to accent
+     */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #090d1a;
+      --bg-card:     rgba(255,255,255,0.05);
+      --accent:      #2563eb;
+      --accent-dim:  rgba(37,99,235,0.18);
+      --accent-glow: rgba(37,99,235,0.08);
+      --text-primary:   rgba(255,255,255,0.92);
+      --text-secondary: rgba(255,255,255,0.68);
+      --text-muted:     rgba(255,255,255,0.42);
+      --border:         rgba(255,255,255,0.08);
+      --shadow-card: 0 1px 4px rgba(37,99,235,0.10), 0 1px 2px rgba(37,99,235,0.06);
+
+      --fs-title:     clamp(22px, 6vw, 28px);
+      --fs-label:     12px;
+      --fs-body:      15px;
+      --fs-secondary: 13px;
+      --fs-badge:     12px;
+    }
+
+    html, body { width: 100%; min-height: 100vh; overflow-x: hidden; }
+
+    body {
+      font-family: 'Outfit', 'Noto Sans TC', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .bg-glow {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse at 25% 15%, rgba(37,99,235,0.14) 0%, transparent 50%),
+        radial-gradient(ellipse at 75% 85%, rgba(37,99,235,0.06) 0%, transparent 50%);
+    }
+
+    .container {
+      position: relative; z-index: 1;
+      max-width: 430px; margin: 0 auto;
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      padding: 16px;
+    }
+
+    /* === HEADER === */
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+      animation: fadeUp 0.32s cubic-bezier(0.16,1,0.3,1) 0.04s both;
+    }
+    .header-label {
+      font-size: var(--fs-label); font-weight: 700;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--accent);
+    }
+    .header-period {
+      font-size: var(--fs-label); font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    /* === TITLE === */
+    .digest-title {
+      font-size: var(--fs-title); font-weight: 800;
+      line-height: 1.2; margin-bottom: 14px;
+      color: var(--text-primary);
+      animation: fadeUp 0.32s cubic-bezier(0.16,1,0.3,1) 0.08s both;
+    }
+
+    /* === ARTICLE ROWS === */
+    .digest-list {
+      flex: 1; display: flex; flex-direction: column; gap: 0;
+    }
+    .digest-item {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      animation: fadeUp 0.32s cubic-bezier(0.16,1,0.3,1) calc(var(--i, 1) * 0.06s + 0.12s) both;
+    }
+    .digest-item:last-child { border-bottom: none; }
+
+    .digest-item-number {
+      display: inline-block;
+      font-size: var(--fs-badge); font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-dim);
+      border-radius: 4px;
+      width: 20px; height: 20px;
+      line-height: 20px; text-align: center;
+      margin-right: 8px;
+      vertical-align: top;
+      flex-shrink: 0;
+    }
+    .digest-item-content {
+      display: inline-block;
+      width: calc(100% - 32px);
+      vertical-align: top;
+    }
+    .digest-item-title {
+      font-size: var(--fs-secondary); font-weight: 600;
+      color: var(--accent);
+      line-height: 1.3;
+      margin-bottom: 2px;
+    }
+    .digest-item-insight {
+      font-size: var(--fs-body); font-weight: 400;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    /* === FOOTER === */
+    .footer {
+      margin-top: auto; padding-top: 12px;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      animation: fadeUp 0.32s cubic-bezier(0.16,1,0.3,1) 0.6s both;
+    }
+    .footer-text {
+      font-size: var(--fs-label); color: var(--text-muted);
+      font-weight: 500; letter-spacing: 0.06em;
+    }
+    .footer-badge {
+      font-size: var(--fs-badge); font-weight: 600;
+      color: var(--accent);
+      border: 1px solid var(--accent-dim);
+      border-radius: 20px; padding: 3px 10px;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body data-format="{{ format }}">
+  <div class="bg-glow"></div>
+  <div class="container">
+
+    <div class="header">
+      <span class="header-label">WEEKLY DIGEST</span>
+      <span class="header-period">{{ period }}</span>
+    </div>
+
+    <div class="digest-title">{{ title }}</div>
+
+    <div class="digest-list">
+      {% for item in digest_points %}
+      <div class="digest-item" style="--i: {{ loop.index }};">
+        <span class="digest-item-number">{{ loop.index }}</span>
+        <div class="digest-item-content">
+          <div class="digest-item-title">{{ item.article_title }}</div>
+          <div class="digest-item-insight">{{ item.insight }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="footer">
+      <span class="footer-text">{{ article_count }} ARTICLES CURATED</span>
+      <span class="footer-badge">NOZOMI</span>
+    </div>
+
+  </div>
+</body>
+</html>

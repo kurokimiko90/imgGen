@@ -344,6 +344,8 @@ async def api_generate_multi(req: GenerateRequest):
             watermark_position=req.watermark_position,
             watermark_opacity=req.watermark_opacity,
             brand_name=req.brand_name,
+            mode=req.mode,
+            color_mood=req.color_mood,
             extraction_config=_to_extraction_config(req.extraction_config, mode=req.mode, social=req.social),
         )
         output_path = _build_output_path(req.theme, fmt, req.webp)

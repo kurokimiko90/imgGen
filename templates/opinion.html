@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=430" />
+  <title>{{ title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Serif+TC:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    /*
+     * opinion.html — Byline Card
+     * DESIGN_VARIANCE=8 / MOTION_INTENSITY=6 / VISUAL_DENSITY=4
+     * Palette: warm-cream #FDFBF6 · burnt-sienna #7A3B1E · ink #1A1814
+     * New visual × Personal Opinion / Commentary content type
+     */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #FDFBF6;
+      --text:        #1A1814;
+      --text-mid:    #786860;
+      --text-dim:    #A89880;
+      --accent:      #7A3B1E;
+      --author-bg:   rgba(122,59,30,0.08);
+      --arg-bg:      rgba(122,59,30,0.04);
+      --line:        #DDD5C8;
+    }
+
+    html, body {
+      width: 100%;
+      height: 430px;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: 'Outfit', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      width: 430px; height: 430px;
+      padding: 16px 20px 14px;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* === AUTHOR BYLINE === */
+    .byline {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 10px; flex-shrink: 0;
+      will-change: transform;
+      animation: fadeUp 0.32s cubic-bezier(0.16,1,0.3,1) 0.02s both;
+    }
+    .byline-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent); flex-shrink: 0;
+    }
+    .byline-name {
+      font-size: 12px; font-weight: 700;
+      letter-spacing: 0.10em; text-transform: uppercase;
+      color: var(--accent);
+    }
+    .byline-sep { font-size: 10px; color: var(--text-dim); }
+    .byline-label { font-size: 10px; color: var(--text-dim); letter-spacing: 0.06em; }
+
+    .top-rule { height: 1px; background: var(--line); margin-bottom: 12px; flex-shrink: 0; }
+
+    /* === OPINION STATEMENT === */
+    .opinion-stmt {
+      font-family: 'Noto Serif TC', Georgia, serif;
+      font-size: clamp(16px, 4.6vw, 20px);
+      font-weight: 700; line-height: 1.45;
+      color: var(--text); word-break: break-word;
+      flex-shrink: 0; margin-bottom: 14px;
+      will-change: transform;
+      animation: fadeUp 0.40s cubic-bezier(0.16,1,0.3,1) 0.10s both;
+    }
+
+    /* === ARGUMENT BOX === */
+    .arg-box {
+      background: var(--arg-bg);
+      border: 1px solid rgba(122,59,30,0.10);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 7px 7px 0;
+      padding: 10px 14px;
+      flex: 1; display: flex; flex-direction: column;
+      min-height: 0; overflow: hidden;
+      will-change: transform;
+      animation: fadeUp 0.36s cubic-bezier(0.16,1,0.3,1) 0.18s both;
+    }
+
+    .arg-label {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--text-dim); margin-bottom: 8px; flex-shrink: 0;
+    }
+
+    .arg-list { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+    .arg-row {
+      display: flex; align-items: flex-start; gap: 9px;
+      padding: 5px 0;
+      border-top: 1px solid rgba(221,213,200,0.60);
+      will-change: transform;
+      animation: fadeUp 0.28s cubic-bezier(0.16,1,0.3,1) calc(var(--i, 1) * 0.07s + 0.24s) both;
+    }
+
+    /* CSS circle bullet (no emoji) */
+    .arg-bullet {
+      width: 5px; height: 5px; border-radius: 50%;
+      border: 1.5px solid var(--accent);
+      flex-shrink: 0; margin-top: 5px;
+      opacity: 0.65;
+    }
+
+    .arg-text {
+      font-family: 'Noto Serif TC', Georgia, serif;
+      font-size: 13px; line-height: 1.60;
+      color: var(--text-mid); font-weight: 400;
+      word-break: break-word;
+    }
+
+    /* === FOOTER === */
+    .footer {
+      display: flex; align-items: center; justify-content: space-between;
+      border-top: 1px solid var(--line);
+      padding-top: 9px; margin-top: 10px; flex-shrink: 0;
+    }
+    .footer-cta {
+      font-size: 10px; color: var(--text-mid); letter-spacing: 0.04em; max-width: 72%;
+    }
+    .nozomi-mark {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--accent);
+      border: 0.5px solid rgba(122,59,30,0.22);
+      border-radius: 2px; padding: 2px 7px;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(7px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* === WATERMARK === */
+    .watermark-overlay {
+      position: fixed; z-index: 100; display: flex;
+      flex-direction: column; align-items: center; gap: 6px; pointer-events: none;
+    }
+    .watermark-top-left     { top: 16px; left: 16px; }
+    .watermark-top-right    { top: 16px; right: 16px; }
+    .watermark-bottom-left  { bottom: 16px; left: 16px; }
+    .watermark-bottom-right { bottom: 16px; right: 16px; }
+    .watermark-img { max-height: 80px; max-width: 200px; object-fit: contain; display: block; }
+    .watermark-text {
+      font-size: 16px; font-weight: 600;
+      color: var(--text-mid);
+      text-shadow: 0 1px 3px rgba(26,24,20,0.10);
+      letter-spacing: 0.02em;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="byline">
+      <div class="byline-dot"></div>
+      <span class="byline-name">{% if brand_name %}{{ brand_name }}{% else %}NOZOMI{% endif %}</span>
+      <span class="byline-sep">/</span>
+      <span class="byline-label">OPINION</span>
+    </div>
+    <div class="top-rule"></div>
+
+    <div class="opinion-stmt">{{ title }}</div>
+
+    <div class="arg-box">
+      <div class="arg-label">我的論據</div>
+      <div class="arg-list">
+        {% for point in key_points %}
+        <div class="arg-row" style="--i: {{ loop.index }};">
+          <div class="arg-bullet"></div>
+          <div class="arg-text">{{ point.text }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="footer">
+      <span class="footer-cta">{% if source %}{{ source }}{% else %}同意這個觀點嗎？留言告訴我{% endif %}</span>
+      <span class="nozomi-mark">NOZOMI</span>
+    </div>
+  </div>
+
+  {% if watermark_data or brand_name %}
+  <div class="watermark-overlay watermark-{{ watermark_position }}">
+    {% if watermark_data %}<img class="watermark-img" src="{{ watermark_data }}" alt="" style="opacity: {{ watermark_opacity }};" />{% endif %}
+    {% if brand_name %}<span class="watermark-text" style="opacity: {{ watermark_opacity }};">{{ brand_name }}</span>{% endif %}
+  </div>
+  {% endif %}
+</body>
+</html>

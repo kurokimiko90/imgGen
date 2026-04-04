@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=430" />
+  <title>{{ title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /*
+     * luxury_data.html — Ruby Dark Data
+     * DESIGN_VARIANCE=8 / MOTION_INTENSITY=6 / VISUAL_DENSITY=4
+     * Palette: bg #0D0D10 · ruby #B91C3A · ruby-bright #E5264F · text #EDE8E4
+     * Liquid Glass cards: backdrop-blur + tinted borders
+     */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #0D0D10;
+      --ruby:         #B91C3A;
+      --ruby-bright:  #E5264F;
+      --ruby-dim:     rgba(185,28,58,0.20);
+      --ruby-glow:    rgba(185,28,58,0.40);
+      --ruby-glow-sm: rgba(229,38,79,0.25);
+      --text:         #EDE8E4;
+      --text-mid:     #9A9490;
+      --text-dim:     #4A4248;
+      --glass-border: rgba(185,28,58,0.20);
+      --glass-top:    rgba(185,28,58,0.60);
+      --glass-inner:  rgba(237,232,228,0.06);
+      --grid-stroke:  rgba(185,28,58,0.06);
+    }
+
+    html, body {
+      width: 100%;
+      height: 430px;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: 'Outfit', 'Noto Sans TC', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* === SVG RADIAL GRID BACKGROUND === */
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .bg-ambient {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 80% 15%, rgba(185,28,58,0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 10% 90%, rgba(185,28,58,0.07) 0%, transparent 40%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* === LAYOUT === */
+    .page {
+      position: relative;
+      z-index: 1;
+      width: 430px;
+      height: 430px;
+      padding: 16px 18px 14px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* === HEADER === */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      flex-shrink: 0;
+    }
+
+    .header-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ruby-bright);
+    }
+
+    .header-source {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.05em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 160px;
+    }
+
+    /* === TITLE === */
+    .title-section {
+      margin-bottom: 11px;
+      flex-shrink: 0;
+    }
+
+    .main-title {
+      font-size: clamp(14px, 3.8vw, 17px);
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.3;
+      letter-spacing: -0.01em;
+      word-break: break-word;
+      animation: fadeUp 0.32s cubic-bezier(0.16,1,0.3,1) 0.04s both;
+      will-change: transform;
+    }
+
+    /* === HERO CARDS GRID === */
+    .hero-cards {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-shrink: 0;
+    }
+
+    /* Liquid Glass card */
+    .hero-card {
+      flex: 1;
+      background: rgba(185,28,58,0.06);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-top: 2px solid var(--glass-top);
+      border-radius: 6px;
+      box-shadow: inset 0 1px 0 var(--glass-inner);
+      padding: 9px 10px 8px;
+      will-change: transform;
+      animation: fadeUp 0.32s cubic-bezier(0.16,1,0.3,1) calc(var(--ci, 1) * 0.08s) both;
+    }
+
+    .card-number {
+      font-family: 'Roboto Mono', monospace;
+      font-size: clamp(19px, 5vw, 23px);
+      font-weight: 700;
+      color: var(--ruby-bright);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      text-shadow: 0 0 18px var(--ruby-glow), 0 0 6px var(--ruby-glow-sm);
+      margin-bottom: 4px;
+    }
+
+    .card-label {
+      font-size: 11px;
+      color: var(--text-mid);
+      line-height: 1.35;
+      font-weight: 500;
+    }
+
+    /* === DIVIDER === */
+    .rule {
+      height: 1px;
+      background: linear-gradient(90deg, var(--ruby), rgba(185,28,58,0.08) 70%, transparent);
+      margin-bottom: 9px;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .rule::before {
+      content: '';
+      position: absolute;
+      left: 0; top: -2px;
+      width: 5px; height: 5px;
+      background: var(--ruby-bright);
+      border-radius: 1px;
+    }
+
+    /* === DATA ROWS === */
+    .data-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .data-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 6px 0;
+      border-top: 1px solid rgba(185,28,58,0.10);
+      will-change: transform;
+      animation: fadeUp 0.32s cubic-bezier(0.16,1,0.3,1) calc(var(--i, 1) * 0.08s + 0.24s) both;
+    }
+
+    .data-row:last-of-type { border-bottom: 1px solid rgba(185,28,58,0.10); }
+
+    .row-tick {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--ruby);
+      letter-spacing: 0.08em;
+      min-width: 18px;
+      padding-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .row-text {
+      font-size: 12px;
+      color: var(--text-mid);
+      line-height: 1.55;
+      font-weight: 400;
+      word-break: break-word;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(7px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* === FOOTER === */
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 8px;
+      border-top: 1px solid rgba(185,28,58,0.12);
+      margin-top: 8px;
+      flex-shrink: 0;
+    }
+
+    .footer-left {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.05em;
+    }
+
+    .footer-badge {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--ruby-bright);
+      border: 1px solid var(--ruby-dim);
+      border-radius: 2px;
+      padding: 2px 8px;
+      box-shadow: inset 0 1px 0 rgba(237,232,228,0.04);
+    }
+
+    /* === WATERMARK === */
+    .watermark-overlay {
+      position: fixed; z-index: 100; display: flex;
+      flex-direction: column; align-items: center; gap: 6px; pointer-events: none;
+    }
+    .watermark-top-left     { top: 16px; left: 16px; }
+    .watermark-top-right    { top: 16px; right: 16px; }
+    .watermark-bottom-left  { bottom: 16px; left: 16px; }
+    .watermark-bottom-right { bottom: 16px; right: 16px; }
+    .watermark-img { max-height: 80px; max-width: 200px; object-fit: contain; display: block; }
+    .watermark-text {
+      font-size: 16px; font-weight: 600;
+      color: var(--text-dim);
+      text-shadow: 0 1px 4px rgba(13,13,16,0.90);
+      letter-spacing: 0.02em;
+    }
+  </style>
+</head>
+<body>
+  <!-- SVG radial grid -->
+  <svg class="bg-grid" viewBox="0 0 430 430" preserveAspectRatio="none">
+    <!-- concentric circles -->
+    {% for r in [40, 80, 120, 160, 200] %}
+    <circle cx="215" cy="215" r="{{ r * 2 }}" fill="none" stroke="rgba(185,28,58,0.055)" stroke-width="0.8"/>
+    {% endfor %}
+    <!-- radial spokes -->
+    {% for angle in [0, 30, 60, 90, 120, 150] %}
+    <line x1="215" y1="215"
+          x2="{{ 215 + 430 * [1,0.87,0.5,0,(-0.5),(-0.87)][loop.index0] }}"
+          y2="{{ 215 + 430 * [0,0.5,0.87,1,0.87,0.5][loop.index0] }}"
+          stroke="rgba(185,28,58,0.04)" stroke-width="0.7"/>
+    {% endfor %}
+  </svg>
+  <div class="bg-ambient"></div>
+
+  <div class="page">
+    <div class="header">
+      <span class="header-label">MARKET DATA</span>
+      <span class="header-source">{% if source %}{{ source }}{% else %}NOZOMI ANALYSIS{% endif %}</span>
+    </div>
+
+    <div class="title-section">
+      <div class="main-title">{{ title }}</div>
+    </div>
+
+    <!-- Hero number cards — key_points[0..2] split on " | " -->
+    <div class="hero-cards">
+      {% for point in key_points[:3] %}
+      {% set parts = point.text.split(' | ') %}
+      <div class="hero-card" style="--ci: {{ loop.index }};">
+        <div class="card-number">{{ parts[0] }}</div>
+        <div class="card-label">{{ parts[1] if parts | length > 1 else '' }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="rule"></div>
+
+    <!-- Supporting data rows — key_points[3+] -->
+    <div class="data-list">
+      {% for point in key_points[3:] %}
+      <div class="data-row" style="--i: {{ loop.index }};">
+        <div class="row-tick">{{ "%02d"|format(loop.index) }}</div>
+        <div class="row-text">{{ point.text }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="footer">
+      <span class="footer-left">NOZOMI</span>
+      <span class="footer-badge">VERIFIED</span>
+    </div>
+  </div>
+
+  {% if watermark_data or brand_name %}
+  <div class="watermark-overlay watermark-{{ watermark_position }}">
+    {% if watermark_data %}<img class="watermark-img" src="{{ watermark_data }}" alt="" style="opacity: {{ watermark_opacity }};" />{% endif %}
+    {% if brand_name %}<span class="watermark-text" style="opacity: {{ watermark_opacity }};">{{ brand_name }}</span>{% endif %}
+  </div>
+  {% endif %}
+</body>
+</html>

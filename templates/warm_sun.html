@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  {% if format == 'landscape' %}<meta name="viewport" content="width=768" />
+  {% elif format == 'twitter' %}<meta name="viewport" content="width=540" />
+  {% else %}<meta name="viewport" content="width=430" />{% endif %}
+  <title>{{ title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    /*
+     * ── DESIGN TOKENS (taste-skill baseline: DESIGN_VARIANCE=8 / MOTION_INTENSITY=6 / VISUAL_DENSITY=4)
+     * Typography scale — shared across all imgGen themes:
+     *   --fs-title:     clamp(26px, 7vw, 34px)   Hero headline
+     *   --fs-body:      18px                       Primary point text
+     *   --fs-secondary: 16px                       Secondary / footer text
+     *   --fs-label:     12px                       ALL-CAPS labels, badges
+     * Motion: fadeUp 0.32s cubic-bezier(0.16,1,0.3,1) with --i * 0.08s stagger
+     * Shadows: always tinted to theme accent color — never pure rgba(0,0,0,...)
+     * Liquid glass: border + box-shadow inset 0 1px 0 rgba(255,255,255,0.10)
+     * ────────────────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange:      #f97316;
+      --orange-dim:  rgba(249,115,22,0.15);
+      --orange-glow: rgba(249,115,22,0.08);
+      --amber:       #fbbf24;
+      --cream:       #fffbf5;
+      --text-deep:   #431407;
+      --text-main:   #7c2d12;
+      --text-muted:  #c2410c;
+      --text-soft:   #ea580c;
+      --border:      rgba(249,115,22,0.18);
+      /* Shadow tinted to orange */
+      --shadow-card: 0 1px 4px rgba(249,115,22,0.10), 0 1px 2px rgba(249,115,22,0.06);
+
+      --fs-title:     clamp(26px, 7vw, 34px);
+      --fs-label:     12px;
+      --fs-body:      18px;
+      --fs-secondary: 16px;
+      --fs-badge:     12px;
+      --circle-size:  22px;
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body {
+      font-family: 'Outfit', 'Noto Sans TC', system-ui, sans-serif;
+      background: var(--cream);
+      color: var(--text-deep);
+      position: relative;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* === BACKGROUND === */
+    .bg-warm {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 110% -10%, rgba(251,191,36,0.42) 0%, transparent 44%),
+        radial-gradient(ellipse at -10% 110%, rgba(249,115,22,0.22) 0%, transparent 44%),
+        radial-gradient(ellipse at 50% 50%, rgba(255,237,213,0.55) 0%, transparent 68%),
+        #fffbf5;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* === LAYOUT === */
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 430px;
+      margin: 0 auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* === TOPBAR === */
+    .topbar {
+      background: linear-gradient(135deg, #ea580c 0%, #f97316 55%, #fbbf24 100%);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .topbar::after {
+      content: '';
+      position: absolute;
+      top: -22px; right: -22px;
+      width: 80px; height: 80px;
+      background: rgba(255,255,255,0.10);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .topbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* SVG sun icon — replaces banned emoji */
+    .sun-icon {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .topbar-name {
+      font-size: var(--fs-label);
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.95);
+    }
+
+    .topbar-tag {
+      font-size: var(--fs-label);
+      font-weight: 600;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.72);
+      border: 1px solid rgba(255,255,255,0.28);
+      border-radius: 20px;
+      padding: 2px 10px;
+    }
+
+    /* === MAIN === */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 14px 16px 16px;
+    }
+
+    /* === TITLE BLOCK === */
+    .title-block { margin-bottom: 12px; }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .eyebrow-bar { width: 18px; height: 2px; background: var(--orange); border-radius: 1px; }
+
+    .eyebrow-text {
+      font-size: var(--fs-label);
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-soft);
+    }
+
+    .hero-title {
+      font-size: var(--fs-title);
+      font-weight: 900;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      color: var(--text-deep);
+      word-break: break-all;
+      overflow-wrap: break-word;
+    }
+
+    /* === DIVIDER === */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .divider-label {
+      font-size: var(--fs-label);
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .divider-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--orange), transparent);
+      opacity: 0.30;
+    }
+
+    /* === POINTS === */
+    .points-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      flex: 1;
+    }
+
+    .point-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: rgba(255,255,255,0.78);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--orange);
+      border-radius: 0 10px 10px 0;
+      padding: 10px 12px;
+      box-shadow: var(--shadow-card);
+      will-change: transform;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .point-card {
+      animation: fadeUp 0.32s cubic-bezier(0.16,1,0.3,1) calc(var(--i, 1) * 0.08s) both;
+    }
+
+    .num-circle {
+      width: var(--circle-size);
+      height: var(--circle-size);
+      min-width: var(--circle-size);
+      border-radius: 50%;
+      background: var(--orange);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .point-text {
+      font-size: var(--fs-body);
+      line-height: 1.65;
+      color: var(--text-deep);
+      font-weight: 400;
+    }
+
+    /* === FOOTER === */
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      margin-top: 10px;
+    }
+
+    .footer-source {
+      font-size: var(--fs-secondary);
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .footer-source span { color: var(--text-soft); font-weight: 500; }
+
+    .powered-pill {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: var(--fs-badge);
+      font-weight: 500;
+      color: var(--text-muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .powered-dot {
+      width: 4px;
+      height: 4px;
+      background: var(--orange);
+      border-radius: 50%;
+    }
+
+    /* === WATERMARK === */
+    .watermark-overlay {
+      position: fixed;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      pointer-events: none;
+    }
+
+    .watermark-top-left     { top: 16px; left: 16px; }
+    .watermark-top-right    { top: 16px; right: 16px; }
+    .watermark-bottom-left  { bottom: 16px; left: 16px; }
+    .watermark-bottom-right { bottom: 16px; right: 16px; }
+
+    .watermark-img { max-height: 80px; max-width: 200px; object-fit: contain; display: block; }
+
+    .watermark-text {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-main);
+      text-shadow: 0 1px 3px rgba(255,255,255,0.6);
+      letter-spacing: 0.02em;
+    }
+
+    /* === THREAD BADGE === */
+    .thread-badge {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 200;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--accent, #2563eb);
+      background: var(--bg-card, rgba(255,255,255,0.08));
+      border: 1px solid var(--border, rgba(255,255,255,0.12));
+      border-radius: 20px;
+      padding: 4px 12px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+  </style>
+</head>
+<body data-format="{{ format }}">
+  {% if thread_index %}
+  <div class="thread-badge">{{ thread_index }} / {{ thread_total }}</div>
+  {% endif %}
+  <div class="bg-warm"></div>
+
+  <div class="container">
+    <div class="topbar">
+      <div class="topbar-brand">
+        <!-- SVG sun icon — ANTI-EMOJI compliant -->
+        <svg class="sun-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="10" cy="10" r="3.8" fill="rgba(255,255,255,0.92)"/>
+          <line x1="10" y1="1.5" x2="10" y2="4"   stroke="rgba(255,255,255,0.80)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="10" y1="16" x2="10" y2="18.5" stroke="rgba(255,255,255,0.80)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="1.5" y1="10" x2="4"   y2="10" stroke="rgba(255,255,255,0.80)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="16"  y1="10" x2="18.5" y2="10" stroke="rgba(255,255,255,0.80)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="3.75" y1="3.75" x2="5.58" y2="5.58" stroke="rgba(255,255,255,0.70)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="14.42" y1="14.42" x2="16.25" y2="16.25" stroke="rgba(255,255,255,0.70)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="16.25" y1="3.75" x2="14.42" y2="5.58" stroke="rgba(255,255,255,0.70)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="5.58"  y1="14.42" x2="3.75" y2="16.25" stroke="rgba(255,255,255,0.70)" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span class="topbar-name">學習心得</span>
+      </div>
+      <div class="topbar-tag">KEY INSIGHTS</div>
+    </div>
+
+    <div class="main">
+      <div class="title-block">
+        <div class="eyebrow">
+          <div class="eyebrow-bar"></div>
+          <span class="eyebrow-text">核心要點</span>
+        </div>
+        <h1 class="hero-title">{{ title }}</h1>
+      </div>
+
+      <div class="divider">
+        <span class="divider-label">重點摘要</span>
+        <div class="divider-line"></div>
+      </div>
+
+      <div class="points-list">
+        {% for point in key_points %}
+        <div class="point-card" style="--i: {{ loop.index }};">
+          <div class="num-circle">{{ "%02d"|format(loop.index) }}</div>
+          <div class="point-text">{{ point.text }}</div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="footer">
+        <div class="footer-source">
+          {% if source %}來源：<span>{{ source }}</span>{% else %}<span>AI 智能摘要</span>{% endif %}
+        </div>
+        <div class="powered-pill">
+          <div class="powered-dot"></div>
+          NOZOMI
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if watermark_data or brand_name %}
+  <div class="watermark-overlay watermark-{{ watermark_position }}">
+    {% if watermark_data %}
+    <img class="watermark-img" src="{{ watermark_data }}" alt="" style="opacity: {{ watermark_opacity }};" />
+    {% endif %}
+    {% if brand_name %}
+    <span class="watermark-text" style="opacity: {{ watermark_opacity }};">{{ brand_name }}</span>
+    {% endif %}
+  </div>
+  {% endif %}
+</body>
+</html>

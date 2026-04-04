@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=430" />
+  <title>{{ title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Serif+TC:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    /*
+     * pastel.html — Pastel Bloom
+     * DESIGN_VARIANCE=8 / MOTION_INTENSITY=6 / VISUAL_DENSITY=4
+     * Palette: blush #FDF0F4 · card #FDF8FA · rose #C25A7A · ink #2E1F28
+     */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #FDF0F4;
+      --card:        #FDF8FA;
+      --accent:      #C25A7A;
+      --accent-dim:  rgba(194,90,122,0.12);
+      --text:        #2E1F28;
+      --text-mid:    #8A6E78;
+      --line:        #E8C4D0;
+      --shadow:      0 4px 24px rgba(46,31,40,0.08), 0 1px 6px rgba(46,31,40,0.05);
+    }
+
+    html, body {
+      width: 100%;
+      height: 430px;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: 'Outfit', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* === OUTER PAGE === */
+    .page {
+      width: 430px;
+      height: 430px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      overflow: hidden;
+    }
+
+    /* === INNER CARD === */
+    .card {
+      flex: 1;
+      background: var(--card);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      padding: 18px 20px 16px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid rgba(194,90,122,0.10);
+    }
+
+    /* === DECORATIVE DOT ROW === */
+    .deco-dots {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 14px;
+      flex-shrink: 0;
+    }
+
+    .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--line);
+    }
+
+    .dot:nth-child(1) { background: var(--accent); opacity: 0.7; }
+    .dot:nth-child(2) { background: var(--accent); opacity: 0.4; }
+    .dot:nth-child(3) { background: var(--accent); opacity: 0.2; }
+
+    /* === EYEBROW + TITLE === */
+    .eyebrow {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.20em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 6px;
+      flex-shrink: 0;
+    }
+
+    /* 2px accent rule under eyebrow */
+    .rule-eyebrow {
+      width: 28px;
+      height: 2px;
+      background: var(--accent);
+      border-radius: 1px;
+      margin-bottom: 10px;
+      flex-shrink: 0;
+    }
+
+    .main-title {
+      font-family: 'Noto Serif TC', Georgia, serif;
+      font-size: clamp(16px, 4.5vw, 20px);
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.45;
+      letter-spacing: 0.01em;
+      word-break: break-word;
+      margin-bottom: 14px;
+      flex-shrink: 0;
+      will-change: transform;
+      animation: fadeUp 0.36s cubic-bezier(0.16,1,0.3,1) 0.06s both;
+    }
+
+    /* === POINTS === */
+    .points-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .point-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 7px 0;
+      border-top: 1px solid var(--line);
+      will-change: transform;
+      animation: fadeUp 0.32s cubic-bezier(0.16,1,0.3,1) calc(var(--i, 1) * 0.08s + 0.12s) both;
+    }
+
+    /* Petal marker */
+    .petal {
+      flex-shrink: 0;
+      width: 6px;
+      height: 6px;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      background: var(--accent);
+      opacity: 0.65;
+      margin-top: 5px;
+    }
+
+    .point-text {
+      font-family: 'Noto Serif TC', Georgia, serif;
+      font-size: 13px;
+      line-height: 1.70;
+      color: var(--text-mid);
+      font-weight: 400;
+      word-break: break-word;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(7px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* === FOOTER === */
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 10px;
+      margin-top: 8px;
+      border-top: 1px solid var(--line);
+      flex-shrink: 0;
+    }
+
+    .footer-source {
+      font-size: 10px;
+      color: var(--text-mid);
+      letter-spacing: 0.04em;
+    }
+
+    .nozomi-mark {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 0.5px solid var(--line);
+      border-radius: 2px;
+      padding: 2px 7px;
+    }
+
+    /* === WATERMARK === */
+    .watermark-overlay {
+      position: fixed; z-index: 100; display: flex;
+      flex-direction: column; align-items: center; gap: 6px; pointer-events: none;
+    }
+    .watermark-top-left     { top: 16px; left: 16px; }
+    .watermark-top-right    { top: 16px; right: 16px; }
+    .watermark-bottom-left  { bottom: 16px; left: 16px; }
+    .watermark-bottom-right { bottom: 16px; right: 16px; }
+    .watermark-img { max-height: 80px; max-width: 200px; object-fit: contain; display: block; }
+    .watermark-text {
+      font-size: 16px; font-weight: 600;
+      color: var(--text-mid);
+      text-shadow: 0 1px 3px rgba(46,31,40,0.12);
+      letter-spacing: 0.02em;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="card">
+      <div class="deco-dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot" style="background: var(--line); opacity:1;"></div>
+        <div class="dot" style="background: var(--line); opacity:1;"></div>
+      </div>
+
+      <div class="eyebrow">{% if source %}{{ source }}{% else %}NOZOMI BLOOM{% endif %}</div>
+      <div class="rule-eyebrow"></div>
+
+      <h1 class="main-title">{{ title }}</h1>
+
+      <div class="points-list">
+        {% for point in key_points %}
+        <div class="point-row" style="--i: {{ loop.index }};">
+          <div class="petal"></div>
+          <div class="point-text">{{ point.text }}</div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="footer">
+        <span class="footer-source">溫柔知識卡</span>
+        <span class="nozomi-mark">NOZOMI</span>
+      </div>
+    </div>
+  </div>
+
+  {% if watermark_data or brand_name %}
+  <div class="watermark-overlay watermark-{{ watermark_position }}">
+    {% if watermark_data %}<img class="watermark-img" src="{{ watermark_data }}" alt="" style="opacity: {{ watermark_opacity }};" />{% endif %}
+    {% if brand_name %}<span class="watermark-text" style="opacity: {{ watermark_opacity }};">{{ brand_name }}</span>{% endif %}
+  </div>
+  {% endif %}
+</body>
+</html>

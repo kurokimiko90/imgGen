@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  {% if format == 'landscape' %}<meta name="viewport" content="width=768" />
+  {% elif format == 'twitter' %}<meta name="viewport" content="width=540" />
+  {% elif format == 'square' %}<meta name="viewport" content="width=430" />
+  {% else %}<meta name="viewport" content="width=430" />{% endif %}
+  <title>{{ title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    /*
+     * thread_card.html — Swiss Grid v2
+     * DESIGN_VARIANCE=8 / MOTION_INTENSITY=6 / VISUAL_DENSITY=4
+     * Palette: off-white #FAFAF9 · slate-950 #0F172A · steel-blue #2B7CB8 (sat 60%)
+     * v2: square-optimised layout, [data-format="square"] overrides
+     */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:             #FAFAF9;
+      --bg-card:        #FFFFFF;
+      --accent:         #2B7CB8;
+      --accent-light:   rgba(43,124,184,0.10);
+      --accent-border:  rgba(43,124,184,0.22);
+      --text-primary:   #0F172A;
+      --text-secondary: #475569;
+      --text-muted:     #94A3B8;
+      --border:         #E2E8F0;
+      /* tinted shadow */
+      --shadow-card:    0 1px 4px rgba(43,124,184,0.08), 0 1px 2px rgba(43,124,184,0.05);
+    }
+
+    html, body {
+      width: 100%;
+      background: var(--bg);
+      font-family: 'Outfit', 'Noto Sans TC', -apple-system, system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* Story / default */
+    body:not([data-format="square"]) {
+      min-height: 100vh;
+    }
+
+    /* Square: fixed 430×430 container */
+    body[data-format="square"] {
+      height: 430px;
+      overflow: hidden;
+    }
+
+    .page {
+      max-width: 430px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    body:not([data-format="square"]) .page {
+      min-height: 100vh;
+      padding: 24px 20px 22px;
+    }
+
+    body[data-format="square"] .page {
+      height: 430px;
+      padding: 14px 16px 12px;
+      overflow: hidden;
+    }
+
+    /* === PROGRESS BAR === */
+    .progress-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    body:not([data-format="square"]) .progress-row { margin-bottom: 18px; }
+    body[data-format="square"]       .progress-row { margin-bottom: 10px; }
+
+    .progress-dots {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .dot {
+      border-radius: 50%;
+      transition: background 0.2s;
+    }
+
+    body:not([data-format="square"]) .dot { width: 7px; height: 7px; }
+    body[data-format="square"]       .dot { width: 6px; height: 6px; }
+
+    .dot.filled { background: var(--accent); }
+    .dot.empty  { background: var(--border); }
+
+    .progress-label {
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+      font-variant-numeric: tabular-nums;
+      margin-left: 2px;
+    }
+
+    .progress-total {
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+
+    body:not([data-format="square"]) .progress-label,
+    body:not([data-format="square"]) .progress-total { font-size: 12px; }
+
+    body[data-format="square"] .progress-label,
+    body[data-format="square"] .progress-total { font-size: 11px; }
+
+    /* Accent hairline */
+    .progress-line {
+      width: 100%;
+      height: 1.5px;
+      background: linear-gradient(90deg, var(--accent), rgba(43,124,184,0.10) 80%, transparent);
+      flex-shrink: 0;
+    }
+
+    body:not([data-format="square"]) .progress-line { margin-bottom: 26px; }
+    body[data-format="square"]       .progress-line { margin-bottom: 10px; }
+
+    /* === SERIES ROW === */
+    .series-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    body:not([data-format="square"]) .series-row { margin-bottom: 20px; }
+    body[data-format="square"]       .series-row { margin-bottom: 10px; }
+
+    .series-tag {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid var(--accent-border);
+      border-radius: 3px;
+      padding: 2px 8px;
+      background: var(--accent-light);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .series-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      letter-spacing: 0.01em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* === MAIN CONTENT CARD === */
+    .content-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--accent);
+      border-radius: 0 0 10px 10px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      animation: fadeUp 0.32s cubic-bezier(0.16,1,0.3,1) 0.08s both;
+      will-change: transform;
+    }
+
+    body:not([data-format="square"]) .content-card {
+      padding: 22px 20px;
+      flex: 1;
+    }
+
+    body[data-format="square"] .content-card {
+      padding: 14px 16px 12px;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-index {
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    body:not([data-format="square"]) .card-index { font-size: 11px; margin-bottom: 14px; }
+    body[data-format="square"]       .card-index { font-size: 10px; margin-bottom: 10px; }
+
+    .card-index-num {
+      font-weight: 900;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    body:not([data-format="square"]) .card-index-num { font-size: 28px; }
+    body[data-format="square"]       .card-index-num { font-size: 22px; }
+
+    .card-divider {
+      width: 1px;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    body:not([data-format="square"]) .card-divider { height: 24px; }
+    body[data-format="square"]       .card-divider { height: 18px; }
+
+    .card-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .card-body {
+      color: var(--text-primary);
+      font-weight: 400;
+      flex: 1;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      overflow: hidden;
+    }
+
+    body:not([data-format="square"]) .card-body { font-size: 18px; line-height: 1.65; }
+    body[data-format="square"]       .card-body { font-size: 15px; line-height: 1.58; }
+
+    /* === CTA HOOK === */
+    .cta-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    body:not([data-format="square"]) .cta-row { margin-top: 20px; padding-top: 16px; }
+    body[data-format="square"]       .cta-row { margin-top: 10px; padding-top: 8px; }
+
+    .cta-line { flex: 1; height: 1px; background: var(--border); }
+
+    .cta-text {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    body[data-format="square"] .cta-text { font-size: 11px; }
+
+    /* === FOOTER === */
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    body:not([data-format="square"]) .footer { padding-top: 14px; margin-top: 16px; }
+    body[data-format="square"]       .footer { padding-top: 8px; margin-top: 8px; }
+
+    .footer-source {
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.03em;
+    }
+
+    body[data-format="square"] .footer-source { font-size: 11px; }
+
+    .footer-source strong {
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    .nozomi-pill {
+      display: inline-flex;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.10em;
+      color: var(--accent);
+      border: 1px solid var(--accent-border);
+      border-radius: 20px;
+      padding: 3px 10px;
+      background: var(--accent-light);
+    }
+
+    /* === WATERMARK === */
+    .watermark-overlay {
+      position: fixed;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      pointer-events: none;
+    }
+    .watermark-top-left     { top: 16px; left: 16px; }
+    .watermark-top-right    { top: 16px; right: 16px; }
+    .watermark-bottom-left  { bottom: 16px; left: 16px; }
+    .watermark-bottom-right { bottom: 16px; right: 16px; }
+    .watermark-img { max-height: 80px; max-width: 200px; object-fit: contain; display: block; }
+    .watermark-text {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      /* tinted shadow */
+      text-shadow: 0 1px 3px rgba(250,250,249,0.9);
+      letter-spacing: 0.02em;
+    }
+  </style>
+</head>
+<body data-format="{{ format }}">
+
+  <div class="page">
+    {% set idx = thread_index if thread_index else 1 %}
+    {% set tot = thread_total if thread_total else (key_points | length) %}
+
+    <div class="progress-row">
+      <div class="progress-dots">
+        {% for i in range(1, tot + 1) %}
+        <div class="dot {% if i <= idx %}filled{% else %}empty{% endif %}"></div>
+        {% endfor %}
+      </div>
+      <span class="progress-label">{{ "%02d"|format(idx) }}</span>
+      <span class="progress-total">/ {{ "%02d"|format(tot) }}</span>
+    </div>
+
+    <div class="progress-line"></div>
+
+    <div class="series-row">
+      <span class="series-tag">系列</span>
+      <span class="series-name">{{ title }}</span>
+    </div>
+
+    {% set current = key_points[idx - 1] if key_points | length >= idx else key_points[0] %}
+    <div class="content-card">
+      <div class="card-index">
+        <span class="card-index-num">{{ "%02d"|format(idx) }}</span>
+        <div class="card-divider"></div>
+        <span class="card-label">本則要點</span>
+      </div>
+      <div class="card-body">{{ current.text }}</div>
+
+      <div class="cta-row">
+        <div class="cta-line"></div>
+        {% if idx < tot %}
+        <span class="cta-text">下一則更關鍵 &rarr;</span>
+        {% else %}
+        <span class="cta-text">系列完結 &middot; 歡迎分享</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="footer-source">
+        {% if source %}<strong>來源</strong> &middot; {{ source }}{% else %}<strong>AI 智能摘要</strong>{% endif %}
+      </div>
+      <div class="nozomi-pill">NOZOMI</div>
+    </div>
+  </div>
+
+  {% if watermark_data or brand_name %}
+  <div class="watermark-overlay watermark-{{ watermark_position }}">
+    {% if watermark_data %}<img class="watermark-img" src="{{ watermark_data }}" alt="" style="opacity: {{ watermark_opacity }};" />{% endif %}
+    {% if brand_name %}<span class="watermark-text" style="opacity: {{ watermark_opacity }};">{{ brand_name }}</span>{% endif %}
+  </div>
+  {% endif %}
+</body>
+</html>

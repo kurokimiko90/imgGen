@@ -1317,6 +1317,128 @@ async def api_accounts():
 
 
 # ---------------------------------------------------------------------------
+# Phase E: Account Settings API
+# ---------------------------------------------------------------------------
+
+class AccountUpdateRequest(BaseModel):
+    name: str | None = None
+    platforms: list[str] | None = None
+    publish_time: str | None = None
+    color_mood: str | None = None
+    tone: str | None = None
+    prompt_content: str | None = None
+
+
+class PreviewRequest(BaseModel):
+    color_mood: str = "dark_tech"
+
+
+_LEVELUP_CONFIG_PATH = Path("~/.imggen/accounts.toml").expanduser()
+_PROMPTS_DIR = PROJECT_ROOT / "prompts"
+
+
+@app.get("/api/accounts/{account_id}/prompt")
+async def api_account_prompt(account_id: str):
+    """Read the prompt file for an account."""
+    if account_id not in ("A", "B", "C"):
+        raise _err(f"Invalid account: {account_id}", 400)
+
+    try:
+        from src.config import LevelUpConfig
+        cfg = LevelUpConfig()
+        account = cfg.get_account(account_id)
+        prompt_path = PROJECT_ROOT / account.prompt_file
+    except Exception:
+        # Fallback to default path
+        prompt_path = _PROMPTS_DIR / f"account_{account_id.lower()}.txt"
+
+    if not prompt_path.exists():
+        raise _err(f"Prompt file not found for account {account_id}.", 404)
+
+    content = prompt_path.read_text(encoding="utf-8")
+    return _ok(account_id=account_id, prompt=content, path=str(prompt_path))
+
+
+@app.put("/api/accounts/{account_id}")
+async def api_account_update(account_id: str, req: AccountUpdateRequest):
+    """Update account configuration and optionally write prompt content."""
+    if account_id not in ("A", "B", "C"):
+        raise _err(f"Invalid account: {account_id}", 400)
+
+    # Validate publish_time format if provided
+    if req.publish_time:
+        import re as _re
+        if not _re.match(r"^\d{2}:\d{2}$", req.publish_time):
+            raise _err("publish_time must be HH:MM format.", 400)
+
+    try:
+        from src.config import LevelUpConfig
+        cfg = LevelUpConfig()
+    except FileNotFoundError:
+        raise _err("Account config file not found. Run setup first.", 500)
+
+    updates = req.model_dump(exclude_none=True, exclude={"prompt_content"})
+
+    try:
+        updated = cfg.save_account(account_id, updates)
+    except ValueError as e:
+        raise _err(str(e), 400)
+
+    # Write prompt file if provided
+    if req.prompt_content is not None:
+        try:
+            prompt_path = PROJECT_ROOT / updated.prompt_file
+            prompt_path.parent.mkdir(parents=True, exist_ok=True)
+            prompt_path.write_text(req.prompt_content, encoding="utf-8")
+        except Exception as e:
+            raise _err(f"Failed to write prompt file: {e}", 500)
+
+    return _ok(account={
+        "id": account_id,
+        "name": updated.name,
+        "platforms": updated.platforms,
+        "publish_time": updated.publish_time,
+        "color_mood": updated.color_mood,
+        "tone": updated.tone,
+        "prompt_file": updated.prompt_file,
+    })
+
+
+@app.post("/api/accounts/{account_id}/preview")
+async def api_account_preview(account_id: str, req: PreviewRequest):
+    """Generate a preview image card for an account with the given color_mood."""
+    if account_id not in ("A", "B", "C"):
+        raise _err(f"Invalid account: {account_id}", 400)
+
+    sample_text = (
+        "This is a preview card showing how your content will look "
+        "with the selected color mood and design settings."
+    )
+    options = PipelineOptions(
+        theme="dark",
+        format="story",
+        provider="claude",
+        mode="smart",
+        color_mood=req.color_mood,
+    )
+    output_path = OUTPUT_DIR / f"preview_{account_id}_{req.color_mood}.png"
+
+    loop = asyncio.get_running_loop()
+    try:
+        _, final_path = await loop.run_in_executor(
+            None, run_pipeline, sample_text, options, output_path
+        )
+    except Exception as e:
+        raise _err(f"Preview generation failed: {e}", 500)
+
+    return _ok(
+        account_id=account_id,
+        color_mood=req.color_mood,
+        preview_url=f"/output/{final_path.name}",
+    )
+
+
+# ---------------------------------------------------------------------------
 # Watch SSE endpoint
 # ---------------------------------------------------------------------------
 

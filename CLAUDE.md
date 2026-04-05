@@ -157,7 +157,7 @@ Input (--text / --file / --url / --batch)
 | `src/scheduler.py` | `calculate_scheduled_time()`, `assign_scheduled_times()` — publish time assignment from `AccountConfig.publish_time` |
 | `src/markdown_io.py` | `export_markdown()`, `parse_markdown()`, `import_markdown()` — mobile-friendly review workflow via Markdown |
 | `src/scrapers/base_scraper.py` | `RawItem` dataclass + `BaseScraper` abstract base class |
-| `src/scrapers/football_scraper.py` | BBC Sport RSS + optional API-Football (requires `API_FOOTBALL_KEY`) |
+| `src/scrapers/football_scraper.py` | BBC Sport RSS (10 articles) + Google News RSS for Japanese players (6 players: Mitoma, Endo, Doan, Tomiyasu, Hatate, Furuhashi) + optional API-Football (requires `API_FOOTBALL_KEY`). Sources interleaved for content diversity. |
 | `src/scrapers/tech_scraper.py` | Hacker News API + TechCrunch RSS |
 | `src/scrapers/pmp_scraper.py` | HBR RSS + PMI Blog RSS |
 | `scripts/daily_curation.py` | Daily curation pipeline: scrape → Claude AI curation (CLI-first, no API key) → imgGen smart image → DB DRAFT; supports A/B/C parallel execution |
@@ -301,16 +301,19 @@ Cycle 3 (設計)  → design_review_loop.py 截圖 → Claude 視覺評論 → C
 **完整自動化管道**（2026-04-05 驗證，含 Token 優化）：
 
 ```
-Raw Items (RSS/API) → 爬蟲 [5 items/帳號]
+Raw Items (RSS/API) → 爬蟲 [多源聚合，10-28 items/帳號]
+  Account A (Tech): Hacker News + TechCrunch
+  Account B (PMP): HBR + PMI Blog
+  Account C (Football): BBC Sport (10) + Japan Players (18) + API-Football (optional)
   ↓ [1-2秒/項]
-AI Evaluation (Claude CLI Haiku - Batch) → 智能過濾
-  ↓ [去重快取] [should_publish=true]
+AI Evaluation (Claude CLI Haiku - Batch) → 智能過濾 + URL 去重
+  ↓ [should_publish=true]
 Generate Image (Smart Mode: Sonnet + Playwright) → 圖卡生成
   ↓ [Card/Article: Haiku] [1-2秒/圖]
-Persist to DB → Content(DRAFT) → Web UI 待審
+Persist to DB → Content(DRAFT) → Web UI 待審 (/api/content/review)
 ```
 
-**驗證結果**：100% 成功率 (6/6 DRAFT 生成), ~2-3 分鐘完成三帳號並發
+**驗證結果**：100% 成功率，Account C 已驗證 28 items → 5-23 DRAFT，~2-3 分鐘完成三帳號並發
 
 **無需 API key** — 完全使用 Claude Code CLI，支持在任何環境（CI/CD、本地、遠端）執行
 
@@ -360,7 +363,7 @@ Persist to DB → Content(DRAFT) → Web UI 待審
 
 | 任務 | 命令 |
 |------|------|
-| 添加新爬蟲 | 1. 建立 `src/scrapers/new_scraper.py` 2. 繼承 `BaseScraper` 3. 實現 `fetch()` 和 `parse()` |
+| 添加新爬蟲 | 1. 建立 `src/scrapers/new_scraper.py` 2. 繼承 `BaseScraper` 3. 實現 `fetch()` 和多個 `_fetch_*()` 私有方法 4. 在 `fetch()` 中聚合並交錯來源（參考 `football_scraper.py`） |
 | 新增 Jinja2 主題 | 1. `templates/new_theme.html` 2. 更新 `VALID_THEMES` 3. 在 `_preview` 中測試 |
 | 修改資料庫結構 | 1. 建立 `src/migrations/NNN_description.sql` 2. `ContentDAO` 自動應用 3. 編寫測試驗證 |
 | 後端新增端點 | 1. `web/api.py` 中新增路由 2. 定義 Pydantic Request/Response 3. 在前端 `web/frontend/src/api/queries.ts` 添加 hook |
@@ -373,7 +376,7 @@ Persist to DB → Content(DRAFT) → Web UI 待審
 tail -f /tmp/backend.log
 
 # 檢查資料庫內容
-sqlite3 ~/.imggen/content.db "SELECT id, title, status FROM content LIMIT 10;"
+sqlite3 ~/.imggen/history.db "SELECT id, account_type, source, status FROM generations WHERE account_type='C' LIMIT 10;"
 
 # 乾跑策展（不寫 DB）
 python scripts/daily_curation.py --dry-run
@@ -382,7 +385,17 @@ python scripts/daily_curation.py --dry-run
 python scripts/daily_curation.py --account A
 
 # 檢查爬蟲輸出（原始）
-python -c "from src.scrapers.football_scraper import FootballScraper; s = FootballScraper(); print(s.fetch()[:500])"
+python -c "
+from src.scrapers.football_scraper import FootballScraper
+s = FootballScraper()
+items = s.fetch()
+sources = {}
+for item in items:
+    sources[item.source] = sources.get(item.source, 0) + 1
+print(f'總計 {len(items)} 項, 來源: {sources}')
+for item in items[:3]:
+    print(f'  [{item.source}] {item.title}')
+"
 ```
 
 ---
@@ -428,10 +441,10 @@ cd web/frontend && npm run dev
 ls -la src/migrations/
 
 # 2. 驗證 DB 架構
-sqlite3 ~/.imggen/content.db ".schema"
+sqlite3 ~/.imggen/history.db ".schema generations"
 
 # 3. 重置資料庫（若開發環境）
-rm ~/.imggen/content.db
+rm ~/.imggen/history.db*
 python scripts/daily_curation.py --dry-run  # 重新初始化
 ```
 

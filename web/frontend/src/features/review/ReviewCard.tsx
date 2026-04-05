@@ -49,7 +49,7 @@ export function ReviewCard({
       className={`rounded-xl border transition-all ${
         selected
           ? 'border-accent bg-accent/5'
-          : 'border-border-subtle bg-white/3 hover:border-border-strong'
+          : 'border-border-subtle bg-white/3 hover:border-border-strong hover:bg-white/5'
       }`}
     >
       <div className="p-4">

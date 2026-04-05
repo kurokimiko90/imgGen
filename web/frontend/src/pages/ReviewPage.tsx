@@ -16,6 +16,7 @@ import { ReviewFilterBar } from '@/features/review/ReviewFilterBar'
 import { EditDrawer } from '@/features/review/EditDrawer'
 import { PreflightDialog } from '@/features/review/PreflightDialog'
 import { BatchBar } from '@/features/review/BatchBar'
+import { ReviewDetailModal } from '@/features/review/ReviewDetailModal'
 
 export function ReviewPage() {
   const {
@@ -46,8 +47,11 @@ export function ReviewPage() {
 
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')
+  const [detailId, setDetailId] = useState<string | null>(null)
 
   const items: ContentDetail[] = review.data?.items ?? []
+  const detailIndex = items.findIndex((i) => i.id === detailId)
+  const detailItem = detailIndex >= 0 ? items[detailIndex] : null
   const pendingCount = items.filter((i) => i.status === 'PENDING_REVIEW').length
   const draftCount = items.filter((i) => i.status === 'DRAFT').length
 
@@ -74,6 +78,18 @@ export function ReviewPage() {
     await batchMutation.mutateAsync({ ids: [...selectedIds], action: 'reject' })
     clearSelection()
     toggleBatchMode()
+  }
+
+  function handleDetailNavigate(direction: 'prev' | 'next') {
+    if (direction === 'prev' && detailIndex > 0) {
+      setDetailId(items[detailIndex - 1].id)
+    } else if (direction === 'next' && detailIndex < items.length - 1) {
+      setDetailId(items[detailIndex + 1].id)
+    }
+  }
+
+  function handleOpenDetail(id: string) {
+    setDetailId(id)
   }
 
   return (
@@ -130,17 +146,22 @@ export function ReviewPage() {
         ) : (
           <div className="space-y-3">
             {items.map((item) => (
-              <ReviewCard
+              <div
                 key={item.id}
-                item={item}
-                selectable={batchMode}
-                selected={selectedIds.has(item.id)}
-                onApprove={handleApprove}
-                onReject={(id) => { setRejectingId(id); setRejectReason('') }}
-                onEdit={(id) => setEditingId(id)}
-                isApproving={approveMutation.isPending}
-                isRejecting={rejectMutation.isPending && rejectingId === item.id}
-              />
+                onClick={() => !batchMode && handleOpenDetail(item.id)}
+                className={!batchMode ? 'cursor-pointer' : ''}
+              >
+                <ReviewCard
+                  item={item}
+                  selectable={batchMode}
+                  selected={selectedIds.has(item.id)}
+                  onApprove={handleApprove}
+                  onReject={(id) => { setRejectingId(id); setRejectReason('') }}
+                  onEdit={(id) => setEditingId(id)}
+                  isApproving={approveMutation.isPending}
+                  isRejecting={rejectMutation.isPending && rejectingId === item.id}
+                />
+              </div>
             ))}
           </div>
         )}
@@ -163,6 +184,21 @@ export function ReviewPage() {
           <PreflightDialog
             warnings={preflightWarnings}
             onClose={() => clearPreflightWarnings()}
+          />
+        )}
+
+        {/* Detail modal */}
+        {detailItem && detailIndex >= 0 && (
+          <ReviewDetailModal
+            item={detailItem}
+            currentIndex={detailIndex}
+            totalItems={items.length}
+            onClose={() => setDetailId(null)}
+            onNavigate={handleDetailNavigate}
+            onApprove={handleApprove}
+            onReject={(id) => { setRejectingId(id); setRejectReason('') }}
+            isApproving={approveMutation.isPending}
+            isRejecting={rejectMutation.isPending && rejectingId === detailItem.id}
           />
         )}
 

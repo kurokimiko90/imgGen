@@ -39,10 +39,21 @@ class FootballScraper(BaseScraper):
 
     def fetch(self) -> list[RawItem]:
         items: list[RawItem] = []
-        items.extend(self._fetch_bbc_rss())
-        items.extend(self._fetch_japan_players())
-        if self.api_key:
-            items.extend(self._fetch_api_football())
+        # Fetch from all sources and interleave them to ensure diversity in curation
+        bbc_items = self._fetch_bbc_rss()
+        japan_items = self._fetch_japan_players()
+        api_items = self._fetch_api_football() if self.api_key else []
+
+        # Interleave sources to ensure variety (e.g., BBC, Japan, BBC, Japan, ...)
+        max_len = max(len(bbc_items), len(japan_items), len(api_items))
+        for i in range(max_len):
+            if i < len(bbc_items):
+                items.append(bbc_items[i])
+            if i < len(japan_items):
+                items.append(japan_items[i])
+            if i < len(api_items):
+                items.append(api_items[i])
+
         return self.validate_items(items)
 
     def _fetch_bbc_rss(self) -> list[RawItem]:

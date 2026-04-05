@@ -312,8 +312,9 @@ async def curate_for_account(
         return 0
 
     # Deduplicate by source URL: skip items already in DB (unless REJECTED)
+    # Use up to 10 items per account to support multiple sources (BBC, Japan players, etc)
     items_to_process = []
-    for item in raw_items[:5]:
+    for item in raw_items[:10]:
         existing = dao.find_by_source_url(item.url)
         if existing:
             print(f"[{account_type}] Skip duplicate: {item.title[:50]} (existing id={existing.id})")

@@ -298,21 +298,40 @@ Cycle 3 (設計)  → design_review_loop.py 截圖 → Claude 視覺評論 → C
 
 ## Automation Status ✅
 
-**完整自動化管道**（2026-04-04 驗證）：
+**完整自動化管道**（2026-04-05 驗證，含 Token 優化）：
 
 ```
 Raw Items (RSS/API) → 爬蟲 [5 items/帳號]
-  ↓ [2-3秒/項]
-AI Evaluation (Claude CLI Haiku) → 智能過濾
-  ↓ [should_publish=true]
-Generate Image (Smart Mode + Playwright) → 圖卡生成
-  ↓ [1-2秒/圖]
+  ↓ [1-2秒/項]
+AI Evaluation (Claude CLI Haiku - Batch) → 智能過濾
+  ↓ [去重快取] [should_publish=true]
+Generate Image (Smart Mode: Sonnet + Playwright) → 圖卡生成
+  ↓ [Card/Article: Haiku] [1-2秒/圖]
 Persist to DB → Content(DRAFT) → Web UI 待審
 ```
 
 **驗證結果**：100% 成功率 (6/6 DRAFT 生成), ~2-3 分鐘完成三帳號並發
 
 **無需 API key** — 完全使用 Claude Code CLI，支持在任何環境（CI/CD、本地、遠端）執行
+
+### Token Optimization Status ✅ (2026-04-05)
+
+**已實作優化**（4/5，P0 & P1 全部完成）：
+
+| 優化 | 說明 | 節省 | Commit |
+|------|------|------|--------|
+| **P0-1** Batch AI Eval | 5 個逐項呼叫 → 1 批量呼叫 + fallback | 12 calls/day (-40K tokens) | `ac21c43` |
+| **P0-2** URL Dedup Cache | DB 去重檢查，跳過重複 URL | 5-10 calls/week | `570d244` |
+| **P1-3** Smart Model Selection | Haiku 預設 (3x 便宜) + Sonnet 限 Smart Mode | -65% tokens | `685dd61` |
+| **P1-4** Web API Cache | 24h TTL 提取快取，多格式複用 | 100% 重複 URL (0 tokens) | `685dd61` |
+
+**模型分層策略：**
+- **Haiku (預設)：** Daily curation 評估、API 圖卡生成（card/article）、批量處理 — 3x 成本優勢
+- **Sonnet (保留)：** Smart Mode 動態佈局設計 — 需要複雜推理
+- **Vision (可選)：** design_review_loop 圖片分析 → CLI 備用
+
+**成本降低：** 30-52K tokens/day → 12-18K tokens/day (**↓ 65-75%**)  
+**月度預估：** ~150-200K → ~40-60K tokens (**↓ 65-70%**)
 
 ## Environment Variables
 

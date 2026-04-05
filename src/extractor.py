@@ -302,7 +302,7 @@ def extract_key_points(
     article_text: str,
     provider: str = "cli",
     config: ExtractionConfig | None = None,
-    model_variant: str = "sonnet",
+    model_variant: str = "haiku",
 ) -> dict[str, Any]:
     """
     Extract structured key points from article text.
@@ -311,7 +311,7 @@ def extract_key_points(
         article_text: The full article text to analyze
         provider: "cli" (default), "claude", "gemini", or "gpt"
         config: Optional extraction configuration. None uses defaults.
-        model_variant: Claude model variant for CLI/API — "sonnet" or "opus".
+        model_variant: Claude model variant for CLI/API — "haiku" (default, 3x cheaper), "sonnet", or "opus".
 
     Returns:
         A dict with keys: title, key_points, source, theme_suggestion

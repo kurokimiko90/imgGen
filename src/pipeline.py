@@ -23,7 +23,7 @@ class PipelineOptions:
     theme: str = "dark"
     format: str = "story"
     provider: str = "cli"
-    model_variant: str = "sonnet"  # "sonnet" or "opus" for Claude provider
+    model_variant: str = "haiku"  # "haiku" (default, 3x cheaper), "sonnet", or "opus" for Claude provider
     scale: int = 2
     webp: bool = False
     watermark_data: str | None = None
@@ -39,7 +39,7 @@ def extract(
     article_text: str,
     provider: str = "cli",
     extraction_config: ExtractionConfig | None = None,
-    model_variant: str = "sonnet",
+    model_variant: str = "haiku",
 ) -> dict[str, Any]:
     """Run AI extraction on article text.
 

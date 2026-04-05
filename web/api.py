@@ -6,12 +6,13 @@ and preset modules via a REST + SSE API.
 """
 
 import asyncio
+import hashlib
 import json
 import os
 import sys
 import tempfile
 from dataclasses import replace as dc_replace
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -48,6 +49,35 @@ from src.scheduler import calculate_scheduled_time
 
 OUTPUT_DIR = PROJECT_ROOT / "output"
 OUTPUT_DIR.mkdir(exist_ok=True)
+
+# Module-level extraction cache: {cache_key: (extracted_data, timestamp)}
+# Cache entries expire after 24 hours
+_extraction_cache: dict[str, tuple[dict[str, Any], datetime]] = {}
+_CACHE_TTL = timedelta(hours=24)
+
+
+def _cache_key(url: str, extraction_config: Any) -> str:
+    """Generate cache key from URL and extraction config."""
+    config_str = f"{extraction_config.language}_{extraction_config.tone}_{extraction_config.mode}"
+    combined = f"{url}_{config_str}"
+    return hashlib.sha256(combined.encode()).hexdigest()[:16]
+
+
+def _cache_get(key: str) -> dict[str, Any] | None:
+    """Get extraction data from cache if valid (not expired)."""
+    if key not in _extraction_cache:
+        return None
+    data, timestamp = _extraction_cache[key]
+    if datetime.now() - timestamp > _CACHE_TTL:
+        del _extraction_cache[key]  # Expired
+        return None
+    return data
+
+
+def _cache_set(key: str, data: dict[str, Any]) -> None:
+    """Store extraction data in cache with current timestamp."""
+    _extraction_cache[key] = (data, datetime.now())
+
 
 app = FastAPI(title="imgGen API", version="4.0")
 app.add_middleware(
@@ -267,28 +297,74 @@ async def api_generate(req: GenerateRequest):
     except Exception as e:
         raise _err(f"Failed to fetch content: {e}")
 
-    options = PipelineOptions(
-        theme=req.theme,
-        format=req.format,
-        provider=req.provider,
-        scale=req.scale,
-        webp=req.webp,
-        watermark_position=req.watermark_position,
-        watermark_opacity=req.watermark_opacity,
-        brand_name=req.brand_name,
-        mode=req.mode,
-        color_mood=req.color_mood,
-        extraction_config=_to_extraction_config(req.extraction_config, mode=req.mode, social=req.social),
-    )
-    output_path = _build_output_path(req.theme, req.format, req.webp)
+    # Use sonnet for smart mode (needs reasoning), haiku for others
+    model_variant = "sonnet" if req.mode == "smart" else "haiku"
 
-    loop = asyncio.get_running_loop()
-    try:
-        data, final_path = await loop.run_in_executor(
-            None, run_pipeline, article_text, options, output_path
+    extraction_config = _to_extraction_config(req.extraction_config, mode=req.mode, social=req.social)
+
+    # Try URL-based extraction cache (only if URL provided)
+    data = None
+    if req.url:
+        cache_key = _cache_key(req.url, extraction_config)
+        data = _cache_get(cache_key)
+        if data:
+            print(f"[api_generate] Cache hit for {req.url[:50]}")
+
+    # If not cached, run full pipeline
+    if data is None:
+        options = PipelineOptions(
+            theme=req.theme,
+            format=req.format,
+            provider=req.provider,
+            scale=req.scale,
+            webp=req.webp,
+            watermark_position=req.watermark_position,
+            watermark_opacity=req.watermark_opacity,
+            brand_name=req.brand_name,
+            mode=req.mode,
+            color_mood=req.color_mood,
+            model_variant=model_variant,
+            extraction_config=extraction_config,
         )
-    except Exception as e:
-        raise _err(f"Pipeline failed: {e}", 500)
+        output_path = _build_output_path(req.theme, req.format, req.webp)
+
+        loop = asyncio.get_running_loop()
+        try:
+            data, final_path = await loop.run_in_executor(
+                None, run_pipeline, article_text, options, output_path
+            )
+        except Exception as e:
+            raise _err(f"Pipeline failed: {e}", 500)
+
+        # Cache the extracted data for future requests with same URL
+        if req.url:
+            cache_key = _cache_key(req.url, extraction_config)
+            _cache_set(cache_key, data)
+    else:
+        # Use cached data, still need to render
+        options = PipelineOptions(
+            theme=req.theme,
+            format=req.format,
+            provider=req.provider,
+            scale=req.scale,
+            webp=req.webp,
+            watermark_position=req.watermark_position,
+            watermark_opacity=req.watermark_opacity,
+            brand_name=req.brand_name,
+            mode=req.mode,
+            color_mood=req.color_mood,
+            model_variant=model_variant,
+            extraction_config=extraction_config,
+        )
+        output_path = _build_output_path(req.theme, req.format, req.webp)
+
+        loop = asyncio.get_running_loop()
+        try:
+            final_path = await loop.run_in_executor(
+                None, render_and_capture, data, options, output_path
+            )
+        except Exception as e:
+            raise _err(f"Rendering failed: {e}", 500)
 
     file_size = final_path.stat().st_size if final_path.exists() else None
 
@@ -327,11 +403,32 @@ async def api_generate_multi(req: GenerateRequest):
     except Exception as e:
         raise _err(f"Failed to fetch content: {e}")
 
+    # Use sonnet for smart mode (needs reasoning), haiku for others
+    model_variant = "sonnet" if req.mode == "smart" else "haiku"
+
+    extraction_config = _to_extraction_config(req.extraction_config, mode=req.mode, social=req.social)
+
+    # Try URL-based extraction cache (only if URL provided)
+    data = None
+    if req.url:
+        cache_key = _cache_key(req.url, extraction_config)
+        data = _cache_get(cache_key)
+        if data:
+            print(f"[api_generate_multi] Cache hit for {req.url[:50]}")
+
+    # If not cached, extract
     loop = asyncio.get_running_loop()
-    data = await loop.run_in_executor(
-        None, extract, article_text, req.provider,
-        _to_extraction_config(req.extraction_config),
-    )
+    if data is None:
+        data = await loop.run_in_executor(
+            None, extract, article_text, req.provider,
+            extraction_config,
+            model_variant,
+        )
+
+        # Cache the extracted data for future requests with same URL
+        if req.url:
+            cache_key = _cache_key(req.url, extraction_config)
+            _cache_set(cache_key, data)
 
     images = []
     for fmt in formats:
@@ -346,7 +443,8 @@ async def api_generate_multi(req: GenerateRequest):
             brand_name=req.brand_name,
             mode=req.mode,
             color_mood=req.color_mood,
-            extraction_config=_to_extraction_config(req.extraction_config, mode=req.mode, social=req.social),
+            model_variant=model_variant,
+            extraction_config=extraction_config,
         )
         output_path = _build_output_path(req.theme, fmt, req.webp)
         final_path = await loop.run_in_executor(

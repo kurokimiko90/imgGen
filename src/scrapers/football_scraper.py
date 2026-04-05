@@ -4,6 +4,7 @@ src/scrapers/football_scraper.py - Football news scraper.
 Sources:
   - BBC Sport Football RSS (no key required)
   - API-Football via RapidAPI (optional, requires API_FOOTBALL_KEY env var)
+  - Google News RSS for Japan football players (no key required)
 """
 
 import os
@@ -16,6 +17,18 @@ from src.scrapers.base_scraper import BaseScraper, RawItem
 
 BBC_SPORT_RSS = "https://feeds.bbci.co.uk/sport/football/rss.xml"
 API_FOOTBALL_BASE = "https://api-football-v1.p.rapidapi.com/v3"
+GOOGLE_NEWS_RSS = "https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"
+GOOGLE_NEWS_UA = "Mozilla/5.0 (compatible; feedparser)"
+
+# Japanese football players in Europe to track
+JAPAN_PLAYERS = [
+    {"name": "Mitoma", "team": "Brighton"},
+    {"name": "Endo", "team": "Liverpool"},
+    {"name": "Doan", "team": "Freiburg"},
+    {"name": "Tomiyasu", "team": "Arsenal"},
+    {"name": "Hatate", "team": "Celtic"},
+    {"name": "Furuhashi", "team": "Celtic"},
+]
 
 
 class FootballScraper(BaseScraper):
@@ -27,6 +40,7 @@ class FootballScraper(BaseScraper):
     def fetch(self) -> list[RawItem]:
         items: list[RawItem] = []
         items.extend(self._fetch_bbc_rss())
+        items.extend(self._fetch_japan_players())
         if self.api_key:
             items.extend(self._fetch_api_football())
         return self.validate_items(items)
@@ -53,6 +67,40 @@ class FootballScraper(BaseScraper):
         except Exception as exc:
             print(f"[FootballScraper] BBC RSS error: {exc}")
             return []
+
+    def _fetch_japan_players(self) -> list[RawItem]:
+        """Fetch news about Japanese football players in Europe."""
+        items: list[RawItem] = []
+        seen_urls: set[str] = set()
+
+        for player in JAPAN_PLAYERS:
+            query = f"{player['name']}+{player['team']}+football"
+            url = GOOGLE_NEWS_RSS.format(query=query)
+            try:
+                feed = feedparser.parse(url, agent=GOOGLE_NEWS_UA)
+                for entry in feed.entries[:3]:  # Max 3 articles per player
+                    link = entry.get("link", "")
+                    if not link or link in seen_urls:
+                        continue
+                    seen_urls.add(link)
+                    pub = entry.get("published_parsed")
+                    published_at = (
+                        datetime(*pub[:6], tzinfo=timezone.utc)
+                        if pub else datetime.now(timezone.utc)
+                    )
+                    items.append(
+                        RawItem(
+                            title=entry.get("title", ""),
+                            url=link,
+                            summary=entry.get("summary", "")[:300],
+                            published_at=published_at,
+                            source="google_news_japan",
+                        )
+                    )
+            except Exception as exc:
+                print(f"[FootballScraper] Japan player {player['name']} error: {exc}")
+
+        return items
 
     def _fetch_api_football(self) -> list[RawItem]:
         items: list[RawItem] = []

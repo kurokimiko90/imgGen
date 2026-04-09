@@ -8,13 +8,13 @@ interface CurationProgressFeedProps {
 }
 
 const EVENT_ICONS: Record<string, React.ReactNode> = {
-  item_fetched: <Check size={12} className="text-blue-400" />,
-  generating_image: <Image size={12} className="text-purple-400" />,
-  saved_draft: <Check size={12} className="text-green-400" />,
-  item_skipped: <SkipForward size={12} className="text-yellow-400" />,
-  item_error: <AlertCircle size={12} className="text-red-400" />,
+  item_fetched: <Check size={12} className="text-accent" />,
+  generating_image: <Image size={12} className="text-accent" />,
+  saved_draft: <Check size={12} className="text-accent" />,
+  item_skipped: <SkipForward size={12} className="text-accent" />,
+  item_error: <AlertCircle size={12} className="text-red-600" />,
   account_start: <Loader2 size={12} className="text-accent animate-spin" />,
-  account_done: <Check size={12} className="text-green-400" />,
+  account_done: <Check size={12} className="text-accent" />,
 }
 
 function formatEvent(event: CurationProgress): string {
@@ -56,7 +56,7 @@ export function CurationProgressFeed({ events, isRunning }: CurationProgressFeed
           <span className="mt-0.5 shrink-0">
             {EVENT_ICONS[event.type] ?? <span className="w-3 h-3 block" />}
           </span>
-          <span className={event.type === 'saved_draft' ? 'text-green-400' : event.type === 'item_error' ? 'text-red-400' : ''}>
+          <span className={event.type === 'saved_draft' ? 'text-accent' : event.type === 'item_error' ? 'text-red-600' : ''}>
             {formatEvent(event)}
           </span>
         </div>

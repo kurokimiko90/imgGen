@@ -15,16 +15,16 @@ interface ReviewCardProps {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  DRAFT: 'text-yellow-400 bg-yellow-400/10',
-  PENDING_REVIEW: 'text-blue-400 bg-blue-400/10',
-  APPROVED: 'text-green-400 bg-green-400/10',
-  REJECTED: 'text-red-400 bg-red-400/10',
+  DRAFT: 'text-accent/70 bg-accent/10',
+  PENDING_REVIEW: 'text-accent bg-accent/15',
+  APPROVED: 'text-accent/60 bg-accent/10',
+  REJECTED: 'text-red-600/70 bg-red-600/15',
 }
 
 const ACCOUNT_COLORS: Record<string, string> = {
-  A: 'bg-purple-500/20 text-purple-300',
-  B: 'bg-sky-500/20 text-sky-300',
-  C: 'bg-amber-500/20 text-amber-300',
+  A: 'bg-accent/10 text-accent',
+  B: 'bg-accent/10 text-accent',
+  C: 'bg-accent/10 text-accent',
 }
 
 export function ReviewCard({
@@ -73,13 +73,13 @@ export function ReviewCard({
                 {item.status.replace('_', ' ')}
               </span>
               {hasErrors && (
-                <span className="flex items-center gap-1 text-xs text-red-400">
+                <span className="flex items-center gap-1 text-xs text-red-600">
                   <AlertTriangle size={12} />
                   Errors
                 </span>
               )}
               {!hasErrors && hasWarnings && (
-                <span className="flex items-center gap-1 text-xs text-yellow-400">
+                <span className="flex items-center gap-1 text-xs text-accent">
                   <AlertTriangle size={12} />
                   Warnings
                 </span>
@@ -110,8 +110,8 @@ export function ReviewCard({
                 key={i}
                 className={`text-xs px-2 py-1 rounded ${
                   w.startsWith('[ERROR]')
-                    ? 'bg-red-500/10 text-red-400'
-                    : 'bg-yellow-500/10 text-yellow-400'
+                    ? 'bg-red-600/10 text-red-600'
+                    : 'bg-accent/10 text-accent'
                 }`}
               >
                 {w.replace(/^\[(ERROR|WARNING)\] /, '')}
@@ -160,7 +160,7 @@ export function ReviewCard({
                 <button
                   onClick={() => onReject(item.id)}
                   disabled={isRejecting}
-                  className="px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
+                  className="px-3 py-1.5 text-xs text-red-600 hover:bg-red-600/10 rounded-lg transition-colors disabled:opacity-50"
                 >
                   <X size={13} className="inline mr-1" />
                   Reject

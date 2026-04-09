@@ -100,7 +100,7 @@ export function CurationPage() {
 
   return (
     <PageTransition>
-      <div className="p-6 space-y-5 max-w-5xl mx-auto">
+      <div className="p-6 space-y-5 max-w-5xl">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -120,7 +120,7 @@ export function CurationPage() {
                 key={acct}
                 onClick={() => startCuration([acct])}
                 disabled={isRunning}
-                className="px-3 py-1.5 text-xs bg-bg-surface border border-border-subtle hover:border-accent text-text-muted hover:text-accent rounded-lg transition-colors disabled:opacity-50"
+                className="px-3 py-1.5 text-xs bg-bg-surface border border-border-subtle hover:border-accent text-text-muted hover:text-accent rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Run {acct}
               </button>
@@ -128,24 +128,17 @@ export function CurationPage() {
             <button
               onClick={() => startCuration(['A', 'B', 'C'])}
               disabled={isRunning}
-              className="flex items-center gap-1.5 px-4 py-1.5 text-sm bg-accent/20 text-accent hover:bg-accent/30 rounded-lg transition-colors disabled:opacity-50"
+              className={`flex items-center gap-1.5 px-4 py-1.5 text-sm rounded-lg transition-colors ${
+                isRunning
+                  ? 'bg-accent/10 text-accent/50 cursor-not-allowed'
+                  : 'bg-accent/20 text-accent hover:bg-accent/30'
+              }`}
             >
               <Play size={14} />
               {isRunning ? 'Running...' : 'Run All'}
             </button>
           </div>
         </div>
-
-        {/* Stats bar */}
-        {stats.data && <CurationStatsBar stats={stats.data.stats} />}
-
-        {/* SSE Progress Feed */}
-        {(isRunning || progress.length > 0) && (
-          <GlassCard>
-            <h2 className="text-xs uppercase tracking-wider text-text-muted mb-3">Progress</h2>
-            <CurationProgressFeed events={progress} isRunning={isRunning} />
-          </GlassCard>
-        )}
 
         {/* Filters */}
         <div className="flex items-center gap-3 flex-wrap">
@@ -185,6 +178,17 @@ export function CurationPage() {
           </select>
         </div>
 
+        {/* Stats bar */}
+        {stats.data && <CurationStatsBar stats={stats.data.stats} />}
+
+        {/* SSE Progress Feed */}
+        {(isRunning || progress.length > 0) && (
+          <GlassCard>
+            <h2 className="text-xs uppercase tracking-wider text-text-muted mb-3">Progress</h2>
+            <CurationProgressFeed events={progress} isRunning={isRunning} />
+          </GlassCard>
+        )}
+
         {/* Draft content list */}
         {drafts.isLoading ? (
           <div className="space-y-3">
@@ -194,7 +198,7 @@ export function CurationPage() {
           </div>
         ) : drafts.isError ? (
           <GlassCard>
-            <div className="flex items-center gap-2 text-red-400">
+            <div className="flex items-center gap-2 text-red-600">
               <AlertCircle size={16} />
               <span className="text-sm">Failed to load drafts</span>
             </div>

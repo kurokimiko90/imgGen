@@ -42,7 +42,7 @@ function StatsPanel({ days }: { days: number | undefined }) {
 
   const statCards = [
     { label: 'Total', value: data.total, icon: Image, color: 'text-accent' },
-    { label: 'Avg Points', value: data.avg_points, icon: BarChart3, color: 'text-purple-400' },
+    { label: 'Avg Points', value: data.avg_points, icon: BarChart3, color: 'text-accent' },
   ]
 
   return (
@@ -60,7 +60,7 @@ function StatsPanel({ days }: { days: number | undefined }) {
         ))}
         {data.by_theme.slice(0, 1).map((t) => (
           <GlassCard key={t.name} className="text-center space-y-1">
-            <Palette size={20} className="mx-auto text-amber-400" />
+            <Palette size={20} className="mx-auto text-accent" />
             <div className="text-2xl font-bold">
               <AnimatedCounter value={t.count} />
             </div>
@@ -69,7 +69,7 @@ function StatsPanel({ days }: { days: number | undefined }) {
         ))}
         {data.by_provider.slice(0, 1).map((p) => (
           <GlassCard key={p.name} className="text-center space-y-1">
-            <Cpu size={20} className="mx-auto text-green-400" />
+            <Cpu size={20} className="mx-auto text-accent" />
             <div className="text-2xl font-bold">
               <AnimatedCounter value={p.count} />
             </div>
@@ -152,7 +152,7 @@ export function HistoryPage() {
   }
 
   return (
-    <PageTransition className="p-6 max-w-5xl mx-auto space-y-5">
+    <PageTransition className="p-6 max-w-5xl space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

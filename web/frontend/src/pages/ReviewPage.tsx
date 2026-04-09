@@ -94,7 +94,7 @@ export function ReviewPage() {
 
   return (
     <PageTransition>
-      <div className="p-6 space-y-5 max-w-5xl mx-auto">
+      <div className="p-6 space-y-5 max-w-5xl">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -131,7 +131,7 @@ export function ReviewPage() {
           </div>
         ) : review.isError ? (
           <GlassCard>
-            <div className="flex items-center gap-2 text-red-400">
+            <div className="flex items-center gap-2 text-red-600">
               <AlertCircle size={16} />
               <span className="text-sm">Failed to load review content</span>
             </div>
@@ -139,7 +139,7 @@ export function ReviewPage() {
         ) : items.length === 0 ? (
           <GlassCard>
             <div className="flex flex-col items-center gap-2 py-8 text-text-muted">
-              <CheckCheck size={32} className="text-green-500 opacity-70" />
+              <CheckCheck size={32} className="text-accent opacity-70" />
               <p className="text-sm">No content pending review</p>
             </div>
           </GlassCard>
@@ -228,7 +228,7 @@ export function ReviewPage() {
                 <button
                   onClick={() => handleReject(rejectingId)}
                   disabled={rejectMutation.isPending}
-                  className="px-3 py-1.5 text-sm bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg disabled:opacity-50"
+                  className="px-3 py-1.5 text-sm bg-red-600/20 text-red-600 hover:bg-red-600/30 rounded-lg disabled:opacity-50"
                 >
                   {rejectMutation.isPending ? 'Rejecting...' : 'Confirm Reject'}
                 </button>

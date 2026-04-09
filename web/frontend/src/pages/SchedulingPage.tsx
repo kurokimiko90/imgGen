@@ -30,7 +30,7 @@ export function SchedulingPage() {
 
   return (
     <PageTransition>
-      <div className="p-6 space-y-5 max-w-5xl mx-auto">
+      <div className="p-6 space-y-5 max-w-5xl">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -98,12 +98,19 @@ export function SchedulingPage() {
           </div>
         </div>
 
+        {/* Drag & Drop Hint */}
+        {!scheduled.isLoading && !scheduled.isError && items.length > 0 && (
+          <p className="text-xs text-text-muted flex items-center gap-1">
+            💡 拖拽內容卡片可重新排期
+          </p>
+        )}
+
         {/* Calendar */}
         {scheduled.isLoading ? (
           <div className="h-64 animate-pulse rounded-xl bg-white/5" />
         ) : scheduled.isError ? (
           <GlassCard>
-            <div className="flex items-center gap-2 text-red-400">
+            <div className="flex items-center gap-2 text-red-600">
               <AlertCircle size={16} />
               <span className="text-sm">Failed to load scheduled content</span>
             </div>

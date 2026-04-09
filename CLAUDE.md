@@ -43,7 +43,13 @@ cd web/frontend && npm run dev
 ```
 
 **開啟瀏覽器：** http://localhost:5173
-- 在 **CurationPage** 點擊「開始策展」即可觸發完整自動化管道（爬蟲 → AI 評估 → 圖卡生成 → DB 儲存）
+
+**核心頁面：**
+- **Generate** — 單次圖卡生成
+- **Curation** — 點擊「開始策展」觸發完整自動化管道（爬蟲 → AI 評估 → 圖卡生成 → DB 儲存）
+- **Review** — 待審內容核准
+- **Scheduling** — 拖拽週曆排期
+- **Prompts** — 🆕 查看所有 LLM 呼叫的完整提示詞歷史記錄
 
 ---
 
@@ -113,6 +119,19 @@ cd web/frontend && npm run build              # 生產打包
 cd web/frontend && npm run test               # 前端測試
 ```
 
+### 📋 Prompt Logger（查看 LLM 呼叫記錄）
+
+```bash
+# Web UI 中查看
+# 開啟 http://localhost:5173/prompts
+# 左欄記錄列表、右欄完整提示詞、頂部統計卡
+
+# CLI API 查詢
+curl http://localhost:8001/api/prompts/latest?limit=50                      # 最新 50 筆記錄（不含提示詞）
+curl http://localhost:8001/api/prompts/stage/extraction/extract-key-points  # 特定 stage 的完整記錄（含提示詞）
+curl http://localhost:8001/api/prompts/stats/extraction/extract-key-points  # 統計（success rate、unique prompts）
+```
+
 ## Architecture
 
 ### Pipeline: Extract → Render → Screenshot
@@ -142,10 +161,12 @@ Input (--text / --file / --url / --batch)
 | `src/config.py` | TOML config system (`~/.imggenrc`) with presets + `LevelUpConfig`/`AccountConfig` for multi-account |
 | `src/history.py` | SQLite (WAL mode) generation history at `~/.imggen/history.db` |
 | `src/fetcher.py` | URL content fetching (Threads.net special-cased with Googlebot UA) |
-| `src/caption.py` | Platform-specific social captions (Twitter/LinkedIn/Instagram) |
+| `src/caption.py` | Platform-specific social captions (Twitter/LinkedIn/Instagram) + 完整 LLM 呼叫日誌記錄 |
 | `src/publisher.py` | Twitter/X posting via tweepy |
-| `web/api.py` | FastAPI REST + SSE backend; `/api/meta` includes `modes`, `color_moods`, `layout_patterns` |
-| `web/frontend/` | React + TypeScript + Vite + TailwindCSS |
+| `src/prompt_logger.py` | 🆕 完整提示詞日誌系統 — SQLite DB (`.tmp/prompts.db`)，記錄所有 LLM 呼叫的 system/user prompt、output、success/error；支持查詢、統計、匯出 |
+| `src/llm_forge_reporter.py` | 可選上報層 — 將提示詞哈希 + 元數據異步上報到中央 Hub；離線隊列機制 |
+| `web/api.py` | FastAPI REST + SSE backend；**Prompt Logger API** 新增 4 端點：`/api/prompts/latest`（最新記錄）、`/api/prompts/stage/{pipeline}/{stage}`（完整提示詞）、`/api/prompts/stats/{pipeline}/{stage}`（統計）、`/api/prompts/export`（JSON 匯出） |
+| `web/frontend/` | React + TypeScript + Vite + TailwindCSS；**Prompts Page** 新增：`PromptsPage`（主頁面）、`PromptStatsBar`（統計卡）、`PromptLogList`（記錄列表）、`PromptDetailPanel`（完整提示詞展示） |
 
 **LevelUp System (multi-account social automation)**
 
@@ -295,6 +316,37 @@ Cycle 3 (設計)  → design_review_loop.py 截圖 → Claude 視覺評論 → C
 - `docs/LEVELUP_IMPLEMENTATION.md` — 完整實作文件
 - `web/frontend/API_GUIDE.md` — API 端點列表（6+ 端點、Request/Response 示例）
 - `web/frontend/ARCHITECTURE.md` — 前端架構詳解
+
+### Prompt Logger System 🆕
+
+完整 LLM 呼叫追踪系統 — 所有提取、字幕生成呼叫都自動記錄完整提示詞到本地 SQLite DB，支持查詢、統計、匯出。
+
+**架構：**
+- **後端日誌** — `src/prompt_logger.py` 記錄到 `.tmp/prompts.db`
+  - 表結構：`id`, `timestamp`, `pipeline_id`, `stage`, `system_prompt`, `user_prompt`, `system_hash`, `user_hash`, `model`, `provider`, `output`, `success`, `error_message`
+  - 覆蓋範圍：`src/extractor.py` (extraction)、`src/caption.py` (caption-generation)
+  - 自動哈希：SHA256(prompt)[:16] 便於去重和版本控制
+
+- **API 端點** — `web/api.py` 新增 4 個公開端點
+  - `GET /api/prompts/latest?limit=50` — 最新 N 筆（不含完整提示詞，快速列表）
+  - `GET /api/prompts/stage/{pipeline_id}/{stage}` — 指定 stage 的完整記錄（含 system/user/output）
+  - `GET /api/prompts/stats/{pipeline_id}/{stage}` — 統計（total_calls、success_rate、unique_system_prompts）
+  - `POST /api/prompts/export` — 匯出為 JSON 文件
+
+- **Web UI** — `PromptsPage` (`/prompts`)
+  - **左欄**：記錄列表（時間、model、success/fail），Stage 篩選 Tab（extraction / caption）
+  - **右欄**：完整提示詞展示，三個摺疊 Section（System Prompt / User Prompt / Output），Copy 按鈕
+  - **頂部**：統計卡（Total Calls、Success Rate、Unique Prompts）
+
+**使用場景：**
+- 🔍 提示詞版本控制 — 追踪 system prompt 的演變
+- 🐛 除錯 — 查看失敗呼叫的完整提示詞和錯誤訊息
+- 📊 成本分析 — 統計 unique prompts、成功率、output 長度趨勢
+- 💾 合規記錄 — 所有 LLM 呼叫的完整追踪，支持匯出供審計
+
+**可選：LLM Forge Hub 上報**
+- `src/llm_forge_reporter.py` — 異步上報提示詞哈希 + 元數據到中央 Hub（需要 `LLM_FORGE_ENABLED=true`）
+- 本地記錄完整提示詞，Hub 只收集匯總統計（成本、成功率）— 隱私保護
 
 ## Automation Status ✅
 
@@ -482,6 +534,27 @@ cat ~/.imggen/accounts.toml | grep -A 5 "account.A"
 python scripts/daily_curation.py --account A --dry-run | grep should_publish
 ```
 
+### ❌ Prompt Logger 查看為空
+
+**症狀**：http://localhost:5173/prompts 頁面無記錄
+
+```bash
+# 1. 檢查後端是否有日誌資料
+curl http://localhost:8001/api/prompts/latest
+
+# 2. 若為空，先運行一次提取生成日誌
+curl -X POST http://localhost:8001/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{"text": "test article", "theme": "dark", "provider": "cli"}'
+
+# 3. 驗證資料庫
+ls -la .tmp/prompts.db
+
+# 4. 檢查前端連接
+# 確認後端運行於 :8001，前端 vite proxy 設定正確
+cat web/frontend/vite.config.ts | grep proxy
+```
+
 ---
 
 ## Resources
@@ -491,3 +564,7 @@ python scripts/daily_curation.py --account A --dry-run | grep should_publish
 - **前端元件**：`web/frontend/src/pages/` 和 `web/frontend/src/components/`
 - **爬蟲列表**：`src/scrapers/` (football, tech, pmp)
 - **樣板系統**：`templates/` (28 主題 + article.html)
+- **Prompt Logger**：
+  - Web UI：`web/frontend/src/pages/PromptsPage.tsx` + 3 個 feature 組件
+  - API：`web/api.py` 的 `/api/prompts/*` 4 個端點
+  - DB 層：`src/prompt_logger.py` 和 `.tmp/prompts.db`

@@ -18,9 +18,9 @@ const SOURCE_LABELS: Record<string, string> = {
 }
 
 const ACCOUNT_COLORS: Record<string, string> = {
-  A: 'bg-purple-500/20 text-purple-300',
-  B: 'bg-sky-500/20 text-sky-300',
-  C: 'bg-amber-500/20 text-amber-300',
+  A: 'bg-accent/10 text-accent',
+  B: 'bg-accent/10 text-accent',
+  C: 'bg-accent/10 text-accent',
 }
 
 export function DraftContentList({ items, onSendToReview, onReject, isLoading }: DraftContentListProps) {
@@ -37,7 +37,7 @@ export function DraftContentList({ items, onSendToReview, onReject, isLoading }:
       {items.map((item) => (
         <div
           key={item.id}
-          className="flex items-center gap-3 p-3 rounded-xl border border-border-subtle bg-white/3 hover:border-border-strong transition-colors"
+          className="flex items-center gap-3 p-3 rounded-xl border border-border-subtle bg-white/3 hover:border-accent/30 hover:bg-white/5 transition-all"
         >
           {/* Account badge */}
           <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-medium ${ACCOUNT_COLORS[item.account_type] ?? ''}`}>
@@ -72,7 +72,7 @@ export function DraftContentList({ items, onSendToReview, onReject, isLoading }:
             <button
               onClick={() => onReject(item)}
               disabled={isLoading}
-              className="p-1.5 text-text-muted hover:text-red-400 hover:bg-red-500/10 rounded transition-colors disabled:opacity-50"
+              className="p-1.5 text-text-muted hover:text-red-600 hover:bg-red-600/10 rounded transition-colors disabled:opacity-50"
               title="Reject"
             >
               <X size={14} />

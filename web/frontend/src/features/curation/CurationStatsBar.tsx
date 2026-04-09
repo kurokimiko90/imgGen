@@ -23,7 +23,7 @@ export function CurationStatsBar({ stats }: CurationStatsBarProps) {
           <div key={id} className="rounded-xl border border-border-subtle bg-white/3 p-3">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-text-muted">Account {id}</span>
-              <span className="text-xs text-green-400">
+              <span className="text-xs text-accent">
                 {Math.round(acct.approval_rate * 100)}% approved
               </span>
             </div>

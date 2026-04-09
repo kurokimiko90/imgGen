@@ -11,6 +11,7 @@ import { ReviewPage } from '@/pages/ReviewPage'
 import { CurationPage } from '@/pages/CurationPage'
 import { SchedulingPage } from '@/pages/SchedulingPage'
 import { AccountSettingsPage } from '@/pages/AccountSettingsPage'
+import { PromptsPage } from '@/pages/PromptsPage'
 
 export default function App() {
   const location = useLocation()
@@ -36,6 +37,7 @@ export default function App() {
               <Route path="/settings" element={<AccountSettingsPage />} />
               <Route path="/captions" element={<CaptionsPage />} />
               <Route path="/history" element={<HistoryPage />} />
+              <Route path="/prompts" element={<PromptsPage />} />
               <Route path="/tools" element={<ToolsPage />} />
               <Route path="/presets" element={<PresetsPage />} />
             </Routes>

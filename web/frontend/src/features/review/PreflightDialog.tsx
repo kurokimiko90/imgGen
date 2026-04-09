@@ -8,11 +8,11 @@ interface PreflightDialogProps {
 export function PreflightDialog({ warnings, onClose }: PreflightDialogProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="bg-bg-surface border border-red-500/30 rounded-xl p-5 w-80 shadow-2xl space-y-4">
+      <div className="bg-bg-surface border border-red-600/30 rounded-xl p-5 w-80 shadow-2xl space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <AlertTriangle size={16} className="text-red-400" />
-            <h3 className="text-sm font-semibold text-red-400">Cannot Approve</h3>
+            <AlertTriangle size={16} className="text-red-600" />
+            <h3 className="text-sm font-semibold text-red-600">Cannot Approve</h3>
           </div>
           <button onClick={onClose} className="text-text-muted hover:text-text-primary">
             <X size={16} />
@@ -25,7 +25,7 @@ export function PreflightDialog({ warnings, onClose }: PreflightDialogProps) {
 
         <ul className="space-y-1">
           {warnings.map((w, i) => (
-            <li key={i} className="text-xs bg-red-500/10 text-red-400 px-2 py-1.5 rounded">
+            <li key={i} className="text-xs bg-red-600/10 text-red-600 px-2 py-1.5 rounded">
               {w.replace(/^\[ERROR\] /, '')}
             </li>
           ))}

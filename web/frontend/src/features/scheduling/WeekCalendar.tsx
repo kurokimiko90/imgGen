@@ -15,9 +15,9 @@ function addDays(isoDate: string, days: number): string {
 }
 
 const ACCOUNT_COLORS: Record<string, string> = {
-  A: 'bg-purple-500/20 border-purple-500/40 text-purple-300',
-  B: 'bg-sky-500/20 border-sky-500/40 text-sky-300',
-  C: 'bg-amber-500/20 border-amber-500/40 text-amber-300',
+  A: 'bg-accent/10 border-accent/20 text-accent',
+  B: 'bg-accent/10 border-accent/20 text-accent',
+  C: 'bg-accent/10 border-accent/20 text-accent',
 }
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']

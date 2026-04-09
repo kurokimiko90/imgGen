@@ -35,7 +35,7 @@ function PointRow({
       />
       <button
         onClick={() => onRemove(index)}
-        className="shrink-0 rounded-md p-1.5 text-text-faint hover:text-red-400 hover:bg-hover opacity-0 group-hover:opacity-100 transition-all"
+        className="shrink-0 rounded-md p-1.5 text-text-faint hover:text-red-600 hover:bg-hover opacity-0 group-hover:opacity-100 transition-all"
         title="Remove point"
       >
         <X size={14} />

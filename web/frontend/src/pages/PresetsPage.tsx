@@ -65,7 +65,7 @@ export function PresetsPage() {
   }
 
   return (
-    <PageTransition className="p-6 max-w-4xl mx-auto space-y-6">
+    <PageTransition className="p-6 max-w-4xl space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -128,7 +128,7 @@ export function PresetsPage() {
 
       {/* Error */}
       {savePreset.isError && (
-        <div className="flex items-center gap-2 text-sm text-red-400">
+        <div className="flex items-center gap-2 text-sm text-red-600">
           <AlertCircle size={14} /> {savePreset.error.message}
         </div>
       )}
@@ -176,7 +176,7 @@ export function PresetsPage() {
                     ) : (
                       <button
                         onClick={() => setDeleteConfirm(name)}
-                        className="rounded-md p-1.5 text-text-muted hover:text-red-400 hover:bg-hover transition-colors"
+                        className="rounded-md p-1.5 text-text-muted hover:text-red-600 hover:bg-hover transition-colors"
                         title="Delete preset"
                       >
                         <Trash2 size={14} />

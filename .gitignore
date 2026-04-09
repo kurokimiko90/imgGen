@@ -38,3 +38,6 @@ ENV/
 # Playwright
 playwright-report/
 test-results/
+
+# Local temp / prompt logs DB
+.tmp/

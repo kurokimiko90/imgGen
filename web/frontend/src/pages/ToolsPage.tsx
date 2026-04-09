@@ -22,7 +22,7 @@ function DigestCard() {
   return (
     <GlassCard className="space-y-4">
       <div className="flex items-center gap-2">
-        <BookOpen size={20} className="text-purple-400" />
+        <BookOpen size={20} className="text-accent" />
         <h3 className="font-medium">Weekly Digest</h3>
       </div>
       <p className="text-sm text-text-muted">
@@ -73,14 +73,14 @@ function DigestCard() {
       <button
         onClick={() => digest.mutate({ days, theme, provider })}
         disabled={digest.isPending}
-        className="flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-40 transition-colors"
+        className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-40 transition-colors"
       >
         {digest.isPending ? <Loader2 size={16} className="animate-spin" /> : <BookOpen size={16} />}
         Generate Digest
       </button>
 
       {digest.isError && (
-        <div className="flex items-center gap-2 text-sm text-red-400">
+        <div className="flex items-center gap-2 text-sm text-red-600">
           <AlertCircle size={14} /> {digest.error.message}
         </div>
       )}
@@ -178,7 +178,7 @@ function BatchCard() {
   return (
     <GlassCard className="space-y-4">
       <div className="flex items-center gap-2">
-        <Layers size={20} className="text-amber-400" />
+        <Layers size={20} className="text-accent" />
         <h3 className="font-medium">Batch Process</h3>
       </div>
       <p className="text-sm text-text-muted">
@@ -243,7 +243,7 @@ function BatchCard() {
         <button
           onClick={handleRun}
           disabled={!file || running}
-          className="flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-40 transition-colors"
+          className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-40 transition-colors"
         >
           {running ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
           Run Batch
@@ -257,9 +257,9 @@ function BatchCard() {
             {results.filter((r) => r.type === 'result').map((r, i) => (
               <div key={i} className="flex items-center gap-2 text-sm">
                 {r.status === 'ok' ? (
-                  <CheckCircle2 size={14} className="text-green-400 shrink-0" />
+                  <CheckCircle2 size={14} className="text-accent shrink-0" />
                 ) : (
-                  <AlertCircle size={14} className="text-red-400 shrink-0" />
+                  <AlertCircle size={14} className="text-red-600 shrink-0" />
                 )}
                 <span className="text-text-muted truncate">#{r.index} {r.input}</span>
                 {r.url && (
@@ -275,8 +275,8 @@ function BatchCard() {
 
       {done && (
         <div className="text-sm text-text-secondary">
-          Done: <span className="text-green-400">{done.ok} ok</span>
-          {done.errors > 0 && <>, <span className="text-red-400">{done.errors} errors</span></>}
+          Done: <span className="text-accent">{done.ok} ok</span>
+          {done.errors > 0 && <>, <span className="text-red-600">{done.errors} errors</span></>}
         </div>
       )}
     </GlassCard>
@@ -364,7 +364,7 @@ function WatchCard() {
   return (
     <GlassCard className="space-y-4">
       <div className="flex items-center gap-2">
-        <Eye size={20} className="text-green-400" />
+        <Eye size={20} className="text-accent" />
         <h3 className="font-medium">Watch Directory</h3>
       </div>
       <p className="text-sm text-text-muted">
@@ -420,7 +420,7 @@ function WatchCard() {
           <button
             onClick={startWatch}
             disabled={!directory.trim()}
-            className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-40 transition-colors"
+            className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-40 transition-colors"
           >
             <Play size={16} /> Start Watching
           </button>
@@ -439,10 +439,10 @@ function WatchCard() {
         <div className="space-y-1 max-h-48 overflow-y-auto">
           {events.map((ev, i) => (
             <div key={i} className="flex items-center gap-2 text-xs">
-              {ev.type === 'started' && <Eye size={12} className="text-green-400" />}
-              {ev.type === 'detected' && <FolderOpen size={12} className="text-amber-400" />}
+              {ev.type === 'started' && <Eye size={12} className="text-accent" />}
+              {ev.type === 'detected' && <FolderOpen size={12} className="text-accent" />}
               {ev.type === 'generated' && <Image size={12} className="text-accent" />}
-              {ev.type === 'error' && <AlertCircle size={12} className="text-red-400" />}
+              {ev.type === 'error' && <AlertCircle size={12} className="text-red-600" />}
               <span className="text-text-muted">
                 {ev.type === 'started' && `Watching ${ev.directory}`}
                 {ev.type === 'detected' && `Detected: ${ev.file}`}
@@ -466,7 +466,7 @@ function WatchCard() {
 
 export function ToolsPage() {
   return (
-    <PageTransition className="p-6 max-w-4xl mx-auto space-y-6">
+    <PageTransition className="p-6 max-w-4xl space-y-6">
       <div className="flex items-center gap-3 mb-2">
         <Wrench size={24} className="text-accent" />
         <h1 className="text-xl font-semibold">Tools</h1>

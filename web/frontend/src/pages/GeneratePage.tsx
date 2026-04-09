@@ -117,7 +117,7 @@ export function GeneratePage() {
   const hasResult = store.imageUrl !== null || store.extractedData !== null
 
   return (
-    <PageTransition className="p-6 max-w-6xl mx-auto space-y-6">
+    <PageTransition className="p-6 space-y-6">
       {/* Input Section */}
       <div className="space-y-5">
         <GlassCard>
@@ -253,7 +253,7 @@ export function GeneratePage() {
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              className="flex items-start gap-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400"
+              className="flex items-start gap-3 rounded-lg border border-red-600/30 bg-red-600/10 px-4 py-3 text-sm text-red-600"
             >
               <AlertCircle size={16} className="mt-0.5 shrink-0" />
               <span>{errorMsg}</span>
@@ -280,7 +280,7 @@ export function GeneratePage() {
       </AnimatePresence>
 
       {!hasResult && store.isGenerating && (
-        <div className="max-w-[380px] mx-auto">
+        <div className="max-w-[380px]">
           <PreviewPanel />
         </div>
       )}

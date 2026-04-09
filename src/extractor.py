@@ -8,10 +8,15 @@ Supports Claude API, Gemini, GPT, and Claude CLI as providers.
 import asyncio
 import json
 import os
+import threading
+import time
 from dataclasses import dataclass
 from typing import Any
 
 from dotenv import load_dotenv
+
+from src.prompt_logger import log_prompt_call
+from src.llm_forge_reporter import record_llm_call
 
 load_dotenv()
 
@@ -355,20 +360,68 @@ def _extract_with_claude(
             "Please set it or create a .env file based on .env.example"
         )
 
-    client = anthropic.Anthropic(api_key=api_key)
-    message = client.messages.create(
-        model=CLAUDE_MODEL,
-        max_tokens=1024,
-        system=system_prompt,
-        messages=[
-            {
-                "role": "user",
-                "content": USER_PROMPT_TEMPLATE.format(article_text=article_text),
-            }
-        ],
-    )
-    raw = message.content[0].text.strip()
-    return _parse_and_validate(raw, provider="claude", config=config)
+    start_time = time.time()
+    user_prompt = USER_PROMPT_TEMPLATE.format(article_text=article_text)
+    output = None
+    success = False
+    error_msg = None
+
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        message = client.messages.create(
+            model=CLAUDE_MODEL,
+            max_tokens=1024,
+            system=system_prompt,
+            messages=[
+                {
+                    "role": "user",
+                    "content": user_prompt,
+                }
+            ],
+        )
+        raw = message.content[0].text.strip()
+        output = raw
+        success = True
+        return _parse_and_validate(raw, provider="claude", config=config)
+    except Exception as e:
+        error_msg = str(e)
+        success = False
+        raise
+    finally:
+        duration_ms = int((time.time() - start_time) * 1000)
+        # 記錄完整提示詞 + 上報到 Hub - 用線程避免阻塞
+        def _log_async():
+            try:
+                asyncio.run(log_prompt_call(
+                    pipeline_id="extraction",
+                    stage="extract-key-points",
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    model=CLAUDE_MODEL,
+                    provider="claude",
+                    output=output or "",
+                    success=success,
+                    error_message=error_msg,
+                ))
+                # 上報到 Hub
+                asyncio.run(record_llm_call(
+                    pipeline_id="extraction",
+                    stage="extract-key-points",
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    output=output or "",
+                    tokens_in=0,
+                    tokens_out=0,
+                    model=CLAUDE_MODEL,
+                    duration_ms=duration_ms,
+                    success=success,
+                    error_message=error_msg,
+                ))
+            except Exception:
+                pass
+
+        thread = threading.Thread(target=_log_async, daemon=True)
+        thread.start()
 
 
 def _extract_with_gemini(
@@ -386,20 +439,68 @@ def _extract_with_gemini(
             "Please set it or create a .env file based on .env.example"
         )
 
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(
-        model_name=GEMINI_MODEL,
-        system_instruction=system_prompt,
-    )
-    response = model.generate_content(
-        USER_PROMPT_TEMPLATE.format(article_text=article_text),
-        generation_config=genai.GenerationConfig(
-            max_output_tokens=1024,
-            temperature=0.3,
-        ),
-    )
-    raw = response.text.strip()
-    return _parse_and_validate(raw, provider="gemini", config=config)
+    start_time = time.time()
+    user_prompt = USER_PROMPT_TEMPLATE.format(article_text=article_text)
+    output = None
+    success = False
+    error_msg = None
+
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(
+            model_name=GEMINI_MODEL,
+            system_instruction=system_prompt,
+        )
+        response = model.generate_content(
+            user_prompt,
+            generation_config=genai.GenerationConfig(
+                max_output_tokens=1024,
+                temperature=0.3,
+            ),
+        )
+        raw = response.text.strip()
+        output = raw
+        success = True
+        return _parse_and_validate(raw, provider="gemini", config=config)
+    except Exception as e:
+        error_msg = str(e)
+        success = False
+        raise
+    finally:
+        duration_ms = int((time.time() - start_time) * 1000)
+        # 記錄完整提示詞 + 上報到 Hub - 用線程避免阻塞
+        def _log_async():
+            try:
+                asyncio.run(log_prompt_call(
+                    pipeline_id="extraction",
+                    stage="extract-key-points",
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    model=GEMINI_MODEL,
+                    provider="gemini",
+                    output=output or "",
+                    success=success,
+                    error_message=error_msg,
+                ))
+                # 上報到 Hub
+                asyncio.run(record_llm_call(
+                    pipeline_id="extraction",
+                    stage="extract-key-points",
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    output=output or "",
+                    tokens_in=0,
+                    tokens_out=0,
+                    model=GEMINI_MODEL,
+                    duration_ms=duration_ms,
+                    success=success,
+                    error_message=error_msg,
+                ))
+            except Exception:
+                pass
+
+        thread = threading.Thread(target=_log_async, daemon=True)
+        thread.start()
 
 
 def _extract_with_gpt(
@@ -417,18 +518,66 @@ def _extract_with_gpt(
             "Please set it or create a .env file based on .env.example"
         )
 
-    client = OpenAI(api_key=api_key)
-    response = client.chat.completions.create(
-        model=GPT_MODEL,
-        max_tokens=1024,
-        temperature=0.3,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": USER_PROMPT_TEMPLATE.format(article_text=article_text)},
-        ],
-    )
-    raw = response.choices[0].message.content.strip()
-    return _parse_and_validate(raw, provider="gpt", config=config)
+    start_time = time.time()
+    user_prompt = USER_PROMPT_TEMPLATE.format(article_text=article_text)
+    output = None
+    success = False
+    error_msg = None
+
+    try:
+        client = OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
+            model=GPT_MODEL,
+            max_tokens=1024,
+            temperature=0.3,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        )
+        raw = response.choices[0].message.content.strip()
+        output = raw
+        success = True
+        return _parse_and_validate(raw, provider="gpt", config=config)
+    except Exception as e:
+        error_msg = str(e)
+        success = False
+        raise
+    finally:
+        duration_ms = int((time.time() - start_time) * 1000)
+        # 記錄完整提示詞 + 上報到 Hub - 用線程避免阻塞
+        def _log_async():
+            try:
+                asyncio.run(log_prompt_call(
+                    pipeline_id="extraction",
+                    stage="extract-key-points",
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    model=GPT_MODEL,
+                    provider="gpt",
+                    output=output or "",
+                    success=success,
+                    error_message=error_msg,
+                ))
+                # 上報到 Hub
+                asyncio.run(record_llm_call(
+                    pipeline_id="extraction",
+                    stage="extract-key-points",
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    output=output or "",
+                    tokens_in=0,
+                    tokens_out=0,
+                    model=GPT_MODEL,
+                    duration_ms=duration_ms,
+                    success=success,
+                    error_message=error_msg,
+                ))
+            except Exception:
+                pass
+
+        thread = threading.Thread(target=_log_async, daemon=True)
+        thread.start()
 
 
 def _extract_with_claude_cli_sync(
@@ -454,30 +603,78 @@ def _extract_with_claude_cli_sync(
 
     user_prompt = USER_PROMPT_TEMPLATE.format(article_text=article_text)
 
-    # Find claude CLI
-    claude_cli = shutil.which("claude")
-    if not claude_cli:
-        raise RuntimeError(
-            "claude CLI not found. Install Claude Code: https://claude.ai/code"
+    start_time = time.time()
+    output = None
+    success = False
+    error_msg = None
+
+    try:
+        # Find claude CLI
+        claude_cli = shutil.which("claude")
+        if not claude_cli:
+            raise RuntimeError(
+                "claude CLI not found. Install Claude Code: https://claude.ai/code"
+            )
+
+        # Filter env to avoid interference with claude CLI's auth
+        env = {k: v for k, v in os.environ.items() if k not in {"CLAUDECODE", "ANTHROPIC_API_KEY"}}
+
+        result = subprocess.run(
+            [claude_cli, "-p", "--system-prompt", system_prompt, "--output-format", "text", "--model", model_variant],
+            input=user_prompt,
+            capture_output=True,
+            text=True,
+            timeout=120,
+            env=env,
         )
 
-    # Filter env to avoid interference with claude CLI's auth
-    env = {k: v for k, v in os.environ.items() if k not in {"CLAUDECODE", "ANTHROPIC_API_KEY"}}
+        if result.returncode != 0:
+            raise RuntimeError(f"claude CLI failed: {result.stderr.strip()}")
 
-    result = subprocess.run(
-        [claude_cli, "-p", "--system-prompt", system_prompt, "--output-format", "text", "--model", model_variant],
-        input=user_prompt,
-        capture_output=True,
-        text=True,
-        timeout=120,
-        env=env,
-    )
+        raw = result.stdout.strip()
+        output = raw
+        success = True
+        return _parse_and_validate(raw, provider="cli", config=cfg)
+    except Exception as e:
+        error_msg = str(e)
+        success = False
+        raise
+    finally:
+        duration_ms = int((time.time() - start_time) * 1000)
+        model_name = "claude-" + model_variant
+        # 記錄完整提示詞 + 上報到 Hub - 用線程避免阻塞
+        def _log_async():
+            try:
+                asyncio.run(log_prompt_call(
+                    pipeline_id="extraction",
+                    stage="extract-key-points",
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    model=model_name,
+                    provider="cli",
+                    output=output or "",
+                    success=success,
+                    error_message=error_msg,
+                ))
+                # 上報到 Hub
+                asyncio.run(record_llm_call(
+                    pipeline_id="extraction",
+                    stage="extract-key-points",
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    output=output or "",
+                    tokens_in=0,
+                    tokens_out=0,
+                    model=model_name,
+                    duration_ms=duration_ms,
+                    success=success,
+                    error_message=error_msg,
+                ))
+            except Exception:
+                pass
 
-    if result.returncode != 0:
-        raise RuntimeError(f"claude CLI failed: {result.stderr.strip()}")
-
-    raw = result.stdout.strip()
-    return _parse_and_validate(raw, provider="cli", config=cfg)
+        thread = threading.Thread(target=_log_async, daemon=True)
+        thread.start()
 
 
 async def _extract_with_claude_cli(

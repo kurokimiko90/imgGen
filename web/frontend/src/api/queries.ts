@@ -602,3 +602,58 @@ export function useAccountPreview() {
       ),
   })
 }
+
+// ---------------------------------------------------------------------------
+// Prompt Logger  (Prompt Viewer)
+// ---------------------------------------------------------------------------
+
+export interface PromptLog {
+  id: number
+  timestamp: number
+  pipeline_id: string
+  stage: string
+  system_prompt?: string
+  user_prompt?: string
+  system_hash: string
+  user_hash: string
+  model: string | null
+  provider: string | null
+  output?: string
+  output_length: number
+  success: boolean
+  error_message: string | null
+}
+
+export interface PromptStats {
+  total_calls: number
+  successful_calls: number
+  success_rate: number
+  unique_system_prompts: number
+  unique_user_prompts: number
+  avg_output_length: number
+  first_call: number
+  last_call: number
+}
+
+export function usePromptsLatest(limit = 50) {
+  return useQuery({
+    queryKey: ['prompts', 'latest', limit],
+    queryFn: () => apiFetch<{ ok: boolean; logs: PromptLog[] }>(`/api/prompts/latest?limit=${limit}`),
+  })
+}
+
+export function usePromptsByStage(pipelineId: string, stage: string) {
+  return useQuery({
+    queryKey: ['prompts', 'stage', pipelineId, stage],
+    queryFn: () => apiFetch<{ ok: boolean; count: number; logs: PromptLog[] }>(`/api/prompts/stage/${pipelineId}/${stage}`),
+    enabled: !!pipelineId && !!stage,
+  })
+}
+
+export function usePromptStats(pipelineId: string, stage: string) {
+  return useQuery({
+    queryKey: ['prompts', 'stats', pipelineId, stage],
+    queryFn: () => apiFetch<{ ok: boolean; stats: PromptStats }>(`/api/prompts/stats/${pipelineId}/${stage}`),
+    enabled: !!pipelineId && !!stage,
+  })
+}

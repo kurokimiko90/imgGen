@@ -16,7 +16,7 @@ export function BatchBar({ selectedCount, onApprove, onReject, onCancel, isLoadi
         <button
           onClick={onReject}
           disabled={isLoading || selectedCount === 0}
-          className="px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
+          className="px-3 py-1.5 text-xs text-red-600 hover:bg-red-600/10 rounded-lg transition-colors disabled:opacity-50"
         >
           <X size={12} className="inline mr-1" />
           Reject All

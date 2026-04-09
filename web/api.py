@@ -46,6 +46,12 @@ from src.content import Content, ContentStatus
 from src.db import ContentDAO
 from src.preflight import preflight_check
 from src.scheduler import calculate_scheduled_time
+from src.prompt_logger import (
+    get_logs_by_stage,
+    get_latest_calls,
+    get_statistics,
+    export_prompts_json,
+)
 
 OUTPUT_DIR = PROJECT_ROOT / "output"
 OUTPUT_DIR.mkdir(exist_ok=True)
@@ -1593,3 +1599,42 @@ async def api_watch_start(
 async def api_watch_stop():
     """Stop the watch (client should close SSE connection)."""
     return _ok()
+
+
+# ---------------------------------------------------------------------------
+# Prompt Logger endpoints (for viewing LLM call history)
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/prompts/latest")
+async def api_prompts_latest(limit: int = 50):
+    """Get latest LLM prompt calls."""
+    logs = get_latest_calls(limit=limit)
+    return _ok(logs=logs)
+
+
+@app.get("/api/prompts/stage/{pipeline_id}/{stage}")
+async def api_prompts_by_stage(pipeline_id: str, stage: str, limit: int = 100):
+    """Get all prompt calls for a specific pipeline stage."""
+    logs = get_logs_by_stage(pipeline_id, stage, limit=limit)
+    return _ok(logs=logs, count=len(logs))
+
+
+@app.get("/api/prompts/stats/{pipeline_id}/{stage}")
+async def api_prompts_stats(pipeline_id: str, stage: str):
+    """Get statistics for a pipeline stage."""
+    stats = get_statistics(pipeline_id, stage)
+    return _ok(stats=stats)
+
+
+@app.post("/api/prompts/export")
+async def api_prompts_export(
+    pipeline_id: str = Form(...),
+    stage: str = Form(...),
+):
+    """Export prompts for a stage as JSON file."""
+    try:
+        file_path = export_prompts_json(pipeline_id, stage)
+        return _ok(file_path=file_path, message=f"Exported to {file_path}")
+    except Exception as e:
+        raise _err(f"Export failed: {e}", 500)

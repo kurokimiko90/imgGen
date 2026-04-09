@@ -57,7 +57,7 @@ export function CaptionsPage() {
   }
 
   return (
-    <PageTransition className="p-6 max-w-4xl mx-auto space-y-6">
+    <PageTransition className="p-6 max-w-4xl space-y-6">
       <div className="flex items-center gap-3 mb-2">
         <MessageSquare size={24} className="text-accent" />
         <h1 className="text-xl font-semibold">Captions</h1>
@@ -130,7 +130,7 @@ export function CaptionsPage() {
 
       {/* Error */}
       {captionMutation.isError && (
-        <div className="flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+        <div className="flex items-center gap-2 rounded-lg border border-red-600/20 bg-red-600/10 px-4 py-3 text-sm text-red-600">
           <AlertCircle size={16} />
           {captionMutation.error.message}
         </div>
@@ -163,7 +163,7 @@ export function CaptionsPage() {
                     >
                       {copiedKey === p.id ? (
                         <>
-                          <Check size={12} className="text-green-400" />
+                          <Check size={12} className="text-accent" />
                           Copied
                         </>
                       ) : (

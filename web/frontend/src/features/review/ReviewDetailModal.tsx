@@ -15,16 +15,16 @@ interface ReviewDetailModalProps {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  DRAFT: 'text-yellow-400 bg-yellow-400/10',
-  PENDING_REVIEW: 'text-blue-400 bg-blue-400/10',
-  APPROVED: 'text-green-400 bg-green-400/10',
-  REJECTED: 'text-red-400 bg-red-400/10',
+  DRAFT: 'text-accent/70 bg-accent/10',
+  PENDING_REVIEW: 'text-accent bg-accent/15',
+  APPROVED: 'text-accent/60 bg-accent/10',
+  REJECTED: 'text-red-600/70 bg-red-600/15',
 }
 
 const ACCOUNT_COLORS: Record<string, string> = {
-  A: 'bg-purple-500/20 text-purple-300',
-  B: 'bg-sky-500/20 text-sky-300',
-  C: 'bg-amber-500/20 text-amber-300',
+  A: 'bg-accent/10 text-accent',
+  B: 'bg-accent/10 text-accent',
+  C: 'bg-accent/10 text-accent',
 }
 
 export function ReviewDetailModal({
@@ -61,7 +61,10 @@ export function ReviewDetailModal({
   }, [currentIndex, totalItems, onNavigate, onClose])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       {/* Modal */}
       <div className="w-full max-w-2xl bg-bg-surface border border-border-subtle rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
@@ -75,7 +78,7 @@ export function ReviewDetailModal({
                 {item.status.replace('_', ' ')}
               </span>
               {item.preflight_warnings.length > 0 && (
-                <span className="flex items-center gap-1 text-xs text-yellow-400">
+                <span className="flex items-center gap-1 text-xs text-red-600">
                   <AlertTriangle size={12} />
                   {item.preflight_warnings.some((w) => w.startsWith('[ERROR]')) ? 'Errors' : 'Warnings'}
                 </span>
@@ -128,8 +131,8 @@ export function ReviewDetailModal({
                     key={i}
                     className={`text-xs px-3 py-2 rounded-lg border ${
                       w.startsWith('[ERROR]')
-                        ? 'bg-red-500/10 border-red-500/20 text-red-400'
-                        : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'
+                        ? 'bg-red-600/10 border-red-600/20 text-red-600'
+                        : 'bg-accent/10 border-accent/20 text-accent'
                     }`}
                   >
                     {w.replace(/^\[(ERROR|WARNING)\] /, '')}
@@ -199,7 +202,7 @@ export function ReviewDetailModal({
               <button
                 onClick={() => onReject(item.id)}
                 disabled={isRejecting}
-                className="px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
+                className="px-4 py-2 text-sm text-red-600 hover:bg-red-600/10 rounded-lg transition-colors disabled:opacity-50"
                 title="Reject"
               >
                 Reject

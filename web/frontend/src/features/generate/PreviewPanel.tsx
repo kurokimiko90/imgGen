@@ -99,7 +99,7 @@ export function PreviewPanel() {
             onClick={handleCopy}
             className="flex items-center justify-center gap-2 rounded-lg bg-bg-input px-4 py-2.5 text-sm font-medium text-text-secondary hover:text-text hover:bg-hover transition-colors"
           >
-            {copied ? <Check size={16} className="text-green-400" /> : <Copy size={16} />}
+            {copied ? <Check size={16} className="text-accent" /> : <Copy size={16} />}
           </button>
           {historyId && (
             <button

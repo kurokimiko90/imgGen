@@ -28,12 +28,20 @@
   body {
     @apply bg-bg text-text antialiased font-sans;
   }
+  button {
+    @apply focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg;
+  }
 }
 
 /* Glassmorphism card */
 .glass-card {
-  @apply rounded-card border border-border bg-bg-card;
+  @apply rounded-card border border-border bg-bg-card transition-all;
   box-shadow: 0 0 1px var(--color-border);
+}
+
+.glass-card:hover {
+  @apply border-accent/30;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 [data-theme="dark"] .glass-card {
@@ -57,6 +65,15 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-scrollbar-hover);
+}
+
+/* Mobile-friendly touch targets */
+@media (max-width: 640px) {
+  button {
+    @apply min-h-12;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
 }
 
 /* Select option readability for light themes */

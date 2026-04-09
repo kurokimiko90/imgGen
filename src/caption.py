@@ -6,8 +6,13 @@ from extracted article data via a separate AI call.
 """
 
 import json
+import threading
+import time
 from pathlib import Path
 from typing import Any
+
+from src.prompt_logger import log_prompt_call
+from src.llm_forge_reporter import record_llm_call
 
 VALID_PLATFORMS = {"twitter", "linkedin", "instagram"}
 
@@ -124,74 +129,139 @@ def _call_provider(prompt: str, provider: str) -> str:
     import shutil
     import subprocess
 
-    if provider == "claude":
-        import anthropic
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
-        if not api_key or api_key == "your_anthropic_key_here":
-            raise ValueError(
-                "ANTHROPIC_API_KEY not configured. Use provider='cli' instead."
+    start_time = time.time()
+    output = None
+    model = None
+    success = False
+    error_msg = None
+    system_prompt = "You are a professional social media caption writer. Generate platform-specific captions."
+
+    try:
+        if provider == "claude":
+            import anthropic
+            api_key = os.environ.get("ANTHROPIC_API_KEY")
+            if not api_key or api_key == "your_anthropic_key_here":
+                raise ValueError(
+                    "ANTHROPIC_API_KEY not configured. Use provider='cli' instead."
+                )
+            client = anthropic.Anthropic(api_key=api_key)
+            model = "claude-sonnet-4-6"
+            response = client.messages.create(
+                model=model,
+                max_tokens=1024,
+                system=system_prompt,
+                messages=[{"role": "user", "content": prompt}],
             )
-        client = anthropic.Anthropic(api_key=api_key)
-        response = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=1024,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return response.content[0].text
+            output = response.content[0].text
+            success = True
+            return output
 
-    if provider == "gemini":
-        import google.generativeai as genai
-        api_key = os.environ.get("GOOGLE_API_KEY")
-        if not api_key or api_key == "your_google_key_here":
-            raise ValueError(
-                "GOOGLE_API_KEY not configured. Use provider='cli' instead."
+        elif provider == "gemini":
+            import google.generativeai as genai
+            api_key = os.environ.get("GOOGLE_API_KEY")
+            if not api_key or api_key == "your_google_key_here":
+                raise ValueError(
+                    "GOOGLE_API_KEY not configured. Use provider='cli' instead."
+                )
+            genai.configure(api_key=api_key)
+            model = "gemini-2.0-flash"
+            genai_model = genai.GenerativeModel(model)
+            response = genai_model.generate_content(prompt)
+            output = response.text
+            success = True
+            return output
+
+        elif provider == "gpt":
+            from openai import OpenAI
+            api_key = os.environ.get("OPENAI_API_KEY")
+            if not api_key or api_key == "your_openai_key_here":
+                raise ValueError(
+                    "OPENAI_API_KEY not configured. Use provider='cli' instead."
+                )
+            client = OpenAI(api_key=api_key)
+            model = "gpt-4o-mini"
+            response = client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=1024,
             )
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-2.0-flash")
-        response = model.generate_content(prompt)
-        return response.text
+            output = response.choices[0].message.content or ""
+            success = True
+            return output
 
-    if provider == "gpt":
-        from openai import OpenAI
-        api_key = os.environ.get("OPENAI_API_KEY")
-        if not api_key or api_key == "your_openai_key_here":
-            raise ValueError(
-                "OPENAI_API_KEY not configured. Use provider='cli' instead."
+        elif provider == "cli":
+            claude_cli = shutil.which("claude")
+            if not claude_cli:
+                raise RuntimeError(
+                    "claude CLI not found. Install via: https://claude.ai/code"
+                )
+
+            # Filter env to avoid interfering with claude CLI's auth
+            env = {
+                k: v for k, v in os.environ.items()
+                if k not in {"CLAUDECODE", "ANTHROPIC_API_KEY"}
+            }
+
+            model = "claude-sonnet"
+            result = subprocess.run(
+                [claude_cli, "-p", "--output-format", "text", "--model", "sonnet"],
+                input=prompt,
+                capture_output=True,
+                text=True,
+                timeout=60,
+                env=env,
             )
-        client = OpenAI(api_key=api_key)
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=1024,
-        )
-        return response.choices[0].message.content or ""
+            if result.returncode != 0:
+                raise RuntimeError(f"Claude CLI failed: {result.stderr.strip()}")
+            output = result.stdout
+            success = True
+            return output
 
-    if provider == "cli":
-        claude_cli = shutil.which("claude")
-        if not claude_cli:
-            raise RuntimeError(
-                "claude CLI not found. Install via: https://claude.ai/code"
-            )
+        else:
+            raise ValueError(f"Unknown provider: {provider}")
 
-        # Filter env to avoid interfering with claude CLI's auth
-        env = {
-            k: v for k, v in os.environ.items()
-            if k not in {"CLAUDECODE", "ANTHROPIC_API_KEY"}
-        }
+    except Exception as e:
+        error_msg = str(e)
+        success = False
+        raise
 
-        result = subprocess.run(
-            [claude_cli, "-p", "--output-format", "text", "--model", "sonnet"],
-            input=prompt,
-            capture_output=True,
-            text=True,
-            timeout=60,
-            env=env,
-        )
-        if result.returncode != 0:
-            raise RuntimeError(f"Claude CLI failed: {result.stderr.strip()}")
-        return result.stdout
+    finally:
+        duration_ms = int((time.time() - start_time) * 1000)
+        # 記錄提示詞 + 上報到 Hub（無論成功或失敗）- 用線程避免阻塞
+        def _log_async():
+            import asyncio
+            try:
+                asyncio.run(log_prompt_call(
+                    pipeline_id="caption-generation",
+                    stage="caption",
+                    system_prompt=system_prompt,
+                    user_prompt=prompt,
+                    model=model,
+                    provider=provider,
+                    output=output or "",
+                    success=success,
+                    error_message=error_msg,
+                ))
+                # 上報到 Hub
+                asyncio.run(record_llm_call(
+                    pipeline_id="caption-generation",
+                    stage="caption",
+                    system_prompt=system_prompt,
+                    user_prompt=prompt,
+                    output=output or "",
+                    tokens_in=0,
+                    tokens_out=0,
+                    model=model,
+                    duration_ms=duration_ms,
+                    success=success,
+                    error_message=error_msg,
+                ))
+            except Exception:
+                # 靜默失敗，不影響主流程
+                pass
 
-    raise ValueError(f"Unknown provider: {provider}")
+        thread = threading.Thread(target=_log_async, daemon=True)
+        thread.start()
 
 
 def save_captions(

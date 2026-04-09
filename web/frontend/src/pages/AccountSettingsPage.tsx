@@ -69,9 +69,9 @@ function AccountPanel({ id, info }: { id: string; info: AccountInfo }) {
   }
 
   const ACCOUNT_COLORS: Record<string, string> = {
-    A: 'text-purple-400 border-purple-500/30',
-    B: 'text-sky-400 border-sky-500/30',
-    C: 'text-amber-400 border-amber-500/30',
+    A: 'text-accent border-accent/20',
+    B: 'text-accent border-accent/20',
+    C: 'text-accent border-accent/20',
   }
 
   return (
@@ -90,7 +90,7 @@ function AccountPanel({ id, info }: { id: string; info: AccountInfo }) {
             {platforms.join(', ') || 'no platforms'}
           </span>
           {isDirty && (
-            <span className="text-xs bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded">
+            <span className="text-xs bg-accent/15 text-accent px-1.5 py-0.5 rounded">
               Unsaved
             </span>
           )}
@@ -231,7 +231,7 @@ export function AccountSettingsPage() {
 
   return (
     <PageTransition>
-      <div className="p-6 space-y-5 max-w-3xl mx-auto">
+      <div className="p-6 space-y-5 max-w-3xl">
         {/* Header */}
         <div className="flex items-center gap-3">
           <Settings size={22} className="text-accent" />
@@ -250,7 +250,7 @@ export function AccountSettingsPage() {
           </div>
         ) : accounts.isError ? (
           <GlassCard>
-            <p className="text-sm text-red-400">Failed to load account settings</p>
+            <p className="text-sm text-red-600">Failed to load account settings</p>
           </GlassCard>
         ) : (
           <div className="space-y-3">

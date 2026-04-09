@@ -1,7 +1,7 @@
 import {
   Sparkles, MessageSquare, Clock, Wrench, Bookmark,
   PanelLeftClose, PanelLeft, LayoutDashboard,
-  ClipboardCheck, Rss, Calendar, Settings,
+  ClipboardCheck, Rss, Calendar, Settings, ScrollText,
 } from 'lucide-react'
 import { NavItem } from './NavItem'
 import { ThemeSwitcher } from './ThemeSwitcher'
@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { to: '/settings', label: 'Settings', icon: Settings },
   { to: '/captions', label: 'Captions', icon: MessageSquare },
   { to: '/history', label: 'History', icon: Clock },
+  { to: '/prompts', label: 'Prompts', icon: ScrollText },
   { to: '/tools', label: 'Tools', icon: Wrench },
   { to: '/presets', label: 'Presets', icon: Bookmark },
 ] as const

@@ -22,7 +22,7 @@ export function DashboardPage() {
 
   return (
     <PageTransition>
-      <div className="p-6 space-y-6 max-w-6xl mx-auto">
+      <div className="p-6 space-y-6 max-w-6xl">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -47,7 +47,7 @@ export function DashboardPage() {
               ))}
             </div>
           ) : stats.isError ? (
-            <div className="text-sm text-red-400 glass-card p-4">Failed to load stats</div>
+            <div className="text-sm text-red-600 glass-card p-4">Failed to load stats</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {ACCOUNT_IDS.map((id) => {
@@ -120,7 +120,7 @@ export function DashboardPage() {
               ))}
             </div>
           ) : recent.isError ? (
-            <div className="text-sm text-red-400">Failed to load recent content</div>
+            <div className="text-sm text-red-600">Failed to load recent content</div>
           ) : (
             <RecentContentList items={recent.data?.items ?? []} />
           )}

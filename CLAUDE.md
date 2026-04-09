@@ -313,7 +313,7 @@ Cycle 3 (設計)  → design_review_loop.py 截圖 → Claude 視覺評論 → C
 - **TanStack Query** — 伺服器狀態同步、自動快取和重新取得
 
 **詳見**:
-- `docs/LEVELUP_IMPLEMENTATION.md` — 完整實作文件
+- `docs/reports/LEVELUP_IMPLEMENTATION.md` — 完整實作文件
 - `web/frontend/API_GUIDE.md` — API 端點列表（6+ 端點、Request/Response 示例）
 - `web/frontend/ARCHITECTURE.md` — 前端架構詳解
 
@@ -559,8 +559,20 @@ cat web/frontend/vite.config.ts | grep proxy
 
 ## Resources
 
-- **架構圖**：見 `docs/` 資料夾
+### 文件目錄結構
+```
+docs/
+├── architecture/   系統設計、UX、擴展規劃、Agent 列表
+├── guides/         用戶指南（Smart Mode、Prompt Logger、Design Review）
+├── prd/            產品需求文件
+├── planning/       計畫、Backlog、整合方案
+├── reports/        實作報告、狀態報告（LevelUp、Token 優化）
+├── roadmaps/       各 Cycle 路線圖
+└── specs/          Cycle 規格、Web UI 規格
+```
+
 - **API 完整參考**：`web/frontend/API_GUIDE.md`
+- **前端架構**：`web/frontend/ARCHITECTURE.md`
 - **前端元件**：`web/frontend/src/pages/` 和 `web/frontend/src/components/`
 - **爬蟲列表**：`src/scrapers/` (football, tech, pmp)
 - **樣板系統**：`templates/` (28 主題 + article.html)

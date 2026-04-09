@@ -28,8 +28,6 @@ PROMPTS_DIR = PROJECT_ROOT / "prompts"
 TEMPLATES_DIR = PROJECT_ROOT / "templates"
 OUTPUT_DIR = PROJECT_ROOT / "output"
 
-TINIFY_API_KEY = os.environ.get("TINIFY_API_KEY", "f56SrBVH1kPPjnlcGly5p6W4dtZVS60S")
-
 # ---------------------------------------------------------------------------
 # Data structures
 # ---------------------------------------------------------------------------
@@ -115,14 +113,18 @@ def build_prompt(
 
 
 def _compress_image_for_review(image_path: Path) -> bytes:
-    """Use tinify to compress the PNG and return compressed bytes."""
-    import tinify
+    """Use PIL to compress the PNG and return compressed bytes (no API cost)."""
+    from PIL import Image
 
-    tinify.key = TINIFY_API_KEY
+    img = Image.open(image_path)
+    # Reduce size: max 1200×800 for vision analysis
+    img.thumbnail((1200, 800), Image.Resampling.LANCZOS)
+
     with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
         tmp_path = Path(tmp.name)
     try:
-        tinify.from_file(str(image_path)).to_file(str(tmp_path))
+        # Save with compression: PNG compression level 9 (max)
+        img.save(str(tmp_path), "PNG", optimize=True)
         data = tmp_path.read_bytes()
     finally:
         tmp_path.unlink(missing_ok=True)

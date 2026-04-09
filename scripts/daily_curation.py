@@ -289,6 +289,7 @@ async def curate_for_account(
     levelup_config: LevelUpConfig,
     dao: ContentDAO,
     dry_run: bool = False,
+    skip_image: bool = False,
     progress_callback=None,  # callback(type: str, **kwargs) for SSE streaming
 ) -> int:
     """Run the full curation pipeline for one account.
@@ -349,7 +350,7 @@ async def curate_for_account(
                 continue
 
             image_path = None
-            if not dry_run:
+            if not dry_run and not skip_image:
                 _emit("generating_image", title=ai_output.get("title", item.title))
                 image_path = generate_image(
                     ai_output["body"],
@@ -400,9 +401,10 @@ async def curate_for_account(
 @click.command()
 @click.option("--account", default=None, type=click.Choice(["A", "B", "C"]), help="只執行指定帳號")
 @click.option("--dry-run", is_flag=True, help="列印草稿但不寫入 DB 或產生圖片")
+@click.option("--no-image", is_flag=True, help="跳過圖片生成（僅評估內容）")
 @click.option("--db-path", default=str(DEFAULT_DB_PATH), help="DB 路徑")
 @click.option("--config-path", default=str(DEFAULT_CONFIG_PATH), help="帳號設定路徑")
-def main(account, dry_run, db_path, config_path):
+def main(account, dry_run, no_image, db_path, config_path):
     """Daily content curation — fetch, AI-curate, and save DRAFTs."""
     config = LevelUpConfig(config_path)
     dao = ContentDAO(db_path)
@@ -414,7 +416,7 @@ def main(account, dry_run, db_path, config_path):
         for acct in accounts_to_run:
             scraper = SCRAPERS[acct]()
             tasks.append(
-                curate_for_account(acct, scraper, config, dao, dry_run=dry_run)
+                curate_for_account(acct, scraper, config, dao, dry_run=dry_run, skip_image=no_image)
             )
         results = await asyncio.gather(*tasks, return_exceptions=True)
 

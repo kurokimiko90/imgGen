@@ -39,6 +39,9 @@ python main.py --file article.txt --mode smart --color-mood dark_tech
 # 自動化工作流
 python scripts/daily_curation.py              # 三帳號並發
 python scripts/daily_curation.py --account A --dry-run
+python scripts/daily_curation.py --no-image   # 跳過圖片生成（省 token）
+python scripts/elite_review.py --account A    # 2-agent 精英審查
+python scripts/elite_review.py --content-id 42 --dry-run
 python scripts/audit.py                       # 互動審核
 python scripts/design_review_loop.py --theme dark
 
@@ -70,6 +73,7 @@ Input → src/extractor.py → src/renderer.py → src/screenshotter.py → outp
 | `src/db.py` | ContentDAO SQLite CRUD，自動遷移 |
 | `src/content.py` | Content dataclass + 狀態機 |
 | `src/prompt_logger.py` | LLM 呼叫完整日誌（`.tmp/prompts.db`） |
+| `src/learning.py` | LearningDAO — 審查學習數據（SQLite） |
 | `src/scrapers/` | football / tech / pmp 爬蟲 |
 | `web/api.py` | FastAPI REST + SSE |
 | `web/frontend/` | React 19 + Zustand + TanStack Query |
@@ -80,6 +84,7 @@ Input → src/extractor.py → src/renderer.py → src/screenshotter.py → outp
 Cycle 2: RSS爬蟲 → Claude批量評估 → imgGen圖卡 → DB(DRAFT)
 Cycle 3: 截圖 → Claude視覺分析 → CSS修補 → 迭代
 Cycle 4: Markdown審核 → 核准/編輯/棄用 → DB(APPROVED)
+Cycle 5: Elite Review → 2-agent並行審查 → 學習回路 → prompt自動進化
 ```
 
 ---
@@ -89,10 +94,10 @@ Cycle 4: Markdown審核 → 核准/編輯/棄用 → DB(APPROVED)
 ```
 imgGen/
 ├── src/              核心 Python 模組（含 scrapers/, migrations/）
-├── scripts/          自動化腳本（daily_curation, audit, design_review_loop）
+├── scripts/          自動化腳本（daily_curation, elite_review, audit, design_review_loop）
 ├── tests/            所有測試文件
 ├── templates/        Jinja2 HTML 模板（28 主題）
-├── prompts/          LLM prompt 文字檔
+├── prompts/          LLM prompt 文字檔（含 agents/ 審查角色）
 ├── web/              FastAPI 後端 + React 前端
 │   └── frontend/src/ components/, features/, pages/, stores/
 ├── output/           生成圖片（.gitignore，只保留 .gitkeep）
@@ -168,6 +173,8 @@ curl http://localhost:8001/api/prompts/latest
 
 - `docs/guides/SMART_MODE_GUIDE.md` — Smart Mode 完整說明
 - `docs/guides/PROMPT_LOGGER_GUIDE.md` — Prompt Logger 使用指南
+- `docs/guides/TOKEN_OPTIMIZATION_ROADMAP.md` — Token 優化路線圖
+- `docs/planning/elite-agent-learning-system.md` — 精英審查系統設計
 - `docs/reports/LEVELUP_IMPLEMENTATION.md` — LevelUp 實作細節
 - `web/frontend/API_GUIDE.md` — API 端點完整參考
 - `web/frontend/ARCHITECTURE.md` — 前端架構詳解

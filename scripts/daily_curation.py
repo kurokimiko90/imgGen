@@ -361,27 +361,43 @@ async def curate_for_account(
             for item in items_to_process
         ]
 
-    drafted = 0
+    # Filter to publishable items only, then generate images in parallel
+    publishable = [
+        (item, ai_output)
+        for item, ai_output in zip(items_to_process, ai_outputs)
+        if ai_output.get("should_publish")
+    ]
     for item, ai_output in zip(items_to_process, ai_outputs):
+        if not ai_output.get("should_publish"):
+            reason = ai_output.get("reasoning", "")
+            print(f"[{account_type}] Skip: {item.title[:50]} — {reason[:60]}")
+            _emit("item_skipped", title=item.title, reason=reason)
+
+    # Parallel image generation for all publishable items
+    image_paths: dict[int, str | None] = {}
+    if not dry_run and not skip_image and publishable:
+        import concurrent.futures
+
+        def _gen(idx_item_output):
+            idx, (item, ai_output) = idx_item_output
+            _emit("generating_image", title=ai_output.get("title", item.title))
+            return idx, generate_image(
+                ai_output["body"],
+                account_config.color_mood,
+                account_type,
+                carousel=carousel,
+                num_slides=num_slides,
+            )
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(publishable)) as executor:
+            for idx, path in executor.map(_gen, enumerate(publishable)):
+                image_paths[idx] = path
+
+    drafted = 0
+    for idx, (item, ai_output) in enumerate(publishable):
         try:
             _emit("item_fetched", title=item.title, source=item.source)
-
-            if not ai_output.get("should_publish"):
-                reason = ai_output.get("reasoning", "")
-                print(f"[{account_type}] Skip: {item.title[:50]} — {reason[:60]}")
-                _emit("item_skipped", title=item.title, reason=reason)
-                continue
-
-            image_path = None
-            if not dry_run and not skip_image:
-                _emit("generating_image", title=ai_output.get("title", item.title))
-                image_path = generate_image(
-                    ai_output["body"],
-                    account_config.color_mood,
-                    account_type,
-                    carousel=carousel,
-                    num_slides=num_slides,
-                )
+            image_path = image_paths.get(idx) if not dry_run and not skip_image else None
 
             content = Content(
                 id="0",  # DAO will assign real id

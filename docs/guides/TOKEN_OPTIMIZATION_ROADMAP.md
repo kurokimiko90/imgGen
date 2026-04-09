@@ -1,12 +1,34 @@
 # Token Optimization Roadmap
 
+## Root Cause Analysis（2026-04-10 實測）
+
+每次 `claude -p` 子進程 = 一個完整 Claude Code session，強制載入：
+- `~/.claude/CLAUDE.md` + rules × 10 個文件 + memory + git status ≈ **8,300t overhead/call**
+
+一次完整 pipeline（3 篇文章 × 5 slides）共 **25 次 claude -p 呼叫**：
+- 總消耗 ~306,000t；其中 CLI overhead 占 **67%**，實際 payload 只有 33%
+- Step 4（Smart Render 15 calls）是最大消耗點，占全流程 40%
+
+## 實作狀態
+
+| 優化項目 | 狀態 | 效果 |
+|---------|------|------|
+| P0: `--no-image` 旗標 | ✅ 已實作 | 跳過圖片生成，省 60% token |
+| P1: PIL 取代 tinify | ✅ 已實作 | tinify 呼叫歸零（免費） |
+| P2: 並行渲染 | ✅ 已實作 | 時間快 3.7x（token 不變） |
+| P3: Prompt hash caching | ⬜ 待實作 | 省 10-20%（重複文章） |
+| P4: Smart mode opt-in | ⬜ 待實作 | 省 50-70%（若改預設） |
+| ~~API 直接呼叫~~ | ❌ 放棄 | 需要 ANTHROPIC_API_KEY |
+| ~~Smart Render 批次化~~ | ❌ 放棄 | Timeout 風險高 |
+
+---
+
 ## Current Cost Drivers
 
 ### High-Cost Operations (降序)
-1. **Design Review Loop** — 5 次迭代 × Claude 視覺分析
-2. **Smart Mode Rendering** — 每張卡片動態生成 HTML+CSS
-3. **Daily Curation AI Evaluation** — 3 帳號並發批次評估
-4. **Image Compression** — tinify API 呼叫
+1. **Smart Mode Rendering** — 每張 slide 一個 claude -p session（8,300t overhead × N slides）
+2. **Design Review Loop** — 5 次迭代 × Claude 視覺分析
+3. **Daily Curation AI Evaluation** — 3 帳號並發批次評估（批次化後已改善）
 
 ### Estimated Monthly Cost
 - 若每天跑 daily_curation × 1 + design_review_loop × 2：
@@ -108,14 +130,37 @@ def _compress_image_for_review(image_path: Path) -> bytes:
 
 ---
 
+## 並行渲染實作細節（P2，已完成）
+
+### `src/pipeline.py` — `run_carousel_pipeline`
+```python
+run_carousel_pipeline(..., parallel=True, max_workers=5)
+```
+- `parallel=True`（預設）：用 `ThreadPoolExecutor` 同時渲染所有 slides
+- 實測：5 slides 從 284s → 78s（3.7x 加速）
+- Token 數不變；品質相同（每個 slide 仍獨立 prompt）
+
+### `scripts/daily_curation.py` — 多文章並行
+- 同帳號多篇文章的 `generate_image()` 改為 `ThreadPoolExecutor` 並行
+- 3 篇文章：以前 3 × 78s = 3.9 分鐘 → 現在 ~78s
+
+---
+
 ## Detailed Implementation Plan
 
-### Phase 1: P0 + P4 (Immediate, Low Risk)
-- [ ] Add `--no-image` flag to daily_curation
-- [ ] Replace tinify with PIL in design_review_loop
-- [ ] Test both changes in dry-run mode
+### ✅ Phase 1: P0 + P1 (完成)
+- [x] Add `--no-image` flag to daily_curation
+- [x] Replace tinify with PIL in design_review_loop
 
-**Estimated savings:** 30–50% of current token spend
+### ✅ Phase 2: 並行渲染 (完成)
+- [x] `run_carousel_pipeline` parallel=True（ThreadPoolExecutor）
+- [x] `curate_for_account` 多文章並行圖片生成
+
+### ⬜ Phase 3: P3 Prompt Caching（待實作）
+- [ ] `src/extractor.py` 加入 prompt hash cache
+- [ ] TTL 24 小時，存於 `.tmp/extraction_cache.json`
+
+**已實現節省：** 時間快 3.7x；`--no-image` 時省 60% token
 
 ### Phase 2: P1 + P2 (Next Sprint)
 - [ ] Reduce design_review_loop max iterations to 3

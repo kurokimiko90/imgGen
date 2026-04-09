@@ -163,6 +163,8 @@ def run_carousel_pipeline(
     options: PipelineOptions,
     output_dir: Path,
     num_slides: int = 5,
+    parallel: bool = True,
+    max_workers: int = 5,
 ) -> tuple[dict[str, Any], list[Path]]:
     """Carousel pipeline: extract slides → render each → screenshot each.
 
@@ -171,10 +173,13 @@ def run_carousel_pipeline(
         options: Pipeline options (theme, format, provider, etc.).
         output_dir: Directory to write slide images into.
         num_slides: Number of slides to generate (3-7).
+        parallel: If True, render slides in parallel using ThreadPoolExecutor.
+        max_workers: Max concurrent render threads (default 5 = all slides at once).
 
     Returns:
         Tuple of (extracted_data_with_slides, list_of_image_paths).
     """
+    import concurrent.futures
     from src.extractor import ExtractionConfig as _EC
 
     output_dir = Path(output_dir)
@@ -198,33 +203,35 @@ def run_carousel_pipeline(
     if not slides:
         raise ValueError("Carousel extraction returned no slides")
 
-    # Render each slide as a separate image
-    image_paths: list[Path] = []
     total = len(slides)
 
-    for slide in slides:
-        idx = slide.get("slide_number", len(image_paths) + 1)
+    def _render_slide(slide: dict) -> tuple[int, Path]:
+        idx = slide.get("slide_number", 0)
         slide_path = output_dir / f"slide_{idx:02d}.png"
-
-        # Convert slide to the data format render_and_capture expects
         slide_data = {
             "title": slide.get("heading", ""),
             "key_points": [{"text": slide.get("body", "")}],
             "source": data.get("source", ""),
             "theme_suggestion": data.get("theme_suggestion", options.theme),
-            # Pass carousel metadata for templates
             "_carousel": True,
             "_slide_role": slide.get("role", "point"),
             "_visual_hint": slide.get("visual_hint", ""),
         }
-
         path = render_and_capture(
-            slide_data,
-            options,
-            slide_path,
-            thread_index=idx,
-            thread_total=total,
+            slide_data, options, slide_path,
+            thread_index=idx, thread_total=total,
         )
-        image_paths.append(path)
+        return idx, path
+
+    if parallel:
+        results: dict[int, Path] = {}
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_render_slide, slide): slide for slide in slides}
+            for future in concurrent.futures.as_completed(futures):
+                idx, path = future.result()
+                results[idx] = path
+        image_paths = [results[k] for k in sorted(results)]
+    else:
+        image_paths = [_render_slide(slide)[1] for slide in slides]
 
     return data, image_paths

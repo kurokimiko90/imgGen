@@ -335,7 +335,7 @@ def record_learnings(
 @click.option("--content-id", default=None, help="Review specific content by ID")
 @click.option("--account", default=None, type=click.Choice(["A", "B", "C"]))
 @click.option("--dry-run", is_flag=True, help="Print scores without saving")
-@click.option("--model", default="haiku", type=click.Choice(["haiku", "sonnet"]))
+@click.option("--model", default="haiku", type=click.Choice(["haiku", "sonnet", "opus"]))
 @click.option("--db-path", default=str(DEFAULT_DB_PATH))
 def main(content_id, account, dry_run, model, db_path):
     """Run elite 2-agent review on content."""

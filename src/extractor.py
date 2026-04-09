@@ -655,7 +655,9 @@ def _extract_with_claude_cli_sync(
     import shutil
 
     cfg = config or ExtractionConfig()
-    if cfg.mode == "smart":
+    if cfg.mode == "carousel":
+        system_prompt = _build_carousel_prompt(cfg)
+    elif cfg.mode == "smart":
         system_prompt = _build_smart_prompt(cfg)
     elif cfg.mode == "article":
         system_prompt = _build_article_prompt(cfg)
@@ -814,7 +816,9 @@ def _validate_extracted_data(
     """
     cfg = config or ExtractionConfig()
 
-    if cfg.mode == "smart":
+    if cfg.mode == "carousel":
+        _validate_carousel_data(data, cfg)
+    elif cfg.mode == "smart":
         _validate_smart_data(data, cfg)
     elif cfg.mode == "article":
         _validate_article_data(data)
@@ -847,6 +851,16 @@ def _validate_card_data(data: dict[str, Any], cfg: ExtractionConfig) -> None:
     valid_themes = {"dark", "light", "gradient", "warm_sun", "cozy"}
     if data["theme_suggestion"] not in valid_themes:
         data["theme_suggestion"] = "dark"
+
+
+def _validate_carousel_data(data: dict[str, Any], cfg: ExtractionConfig) -> None:
+    """Validate carousel mode extraction output."""
+    if "slides" not in data:
+        raise ValueError("Missing required field in response: 'slides'")
+    if not isinstance(data["slides"], list):
+        raise ValueError("'slides' must be a list")
+    if len(data["slides"]) == 0:
+        raise ValueError("'slides' must not be empty")
 
 
 def _validate_article_data(data: dict[str, Any]) -> None:

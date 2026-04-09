@@ -5,10 +5,11 @@
 
 ## 項目概述
 
-**imgGen** — 文章 → AI 摘取 → HTML 圖卡 → Playwright 截圖管道。三種渲染模式：
+**imgGen** — 文章 → AI 摘取 → HTML 圖卡 → Playwright 截圖管道。四種渲染模式：
 - **card**（預設）：Jinja2 靜態模板，28 主題
 - **article**：結構化 3 段文章格式
 - **smart**：Claude 動態生成 HTML+CSS，每張卡片獨立設計
+- **carousel**：1 篇文章 → 3-7 張輪播圖（hook/point/data/quote/cta 角色分配）
 
 **LevelUp Web UI**（Phase A-E ✅）— 多帳號社交媒體自動化全棧介面。
 
@@ -40,8 +41,10 @@ python main.py --file article.txt --mode smart --color-mood dark_tech
 python scripts/daily_curation.py              # 三帳號並發
 python scripts/daily_curation.py --account A --dry-run
 python scripts/daily_curation.py --no-image   # 跳過圖片生成（省 token）
-python scripts/elite_review.py --account A    # 2-agent 精英審查
+python scripts/daily_curation.py --carousel --slides 5   # 輪播圖模式
+python scripts/elite_review.py --account A    # 2-agent 精英審查（支援 --model opus/sonnet/haiku）
 python scripts/elite_review.py --content-id 42 --dry-run
+python scripts/fetch_ai_sources.py            # 測試 AI 內容來源
 python scripts/audit.py                       # 互動審核
 python scripts/design_review_loop.py --theme dark
 
@@ -63,7 +66,7 @@ Input → src/extractor.py → src/renderer.py → src/screenshotter.py → outp
 | 模組 | 職責 |
 |------|------|
 | `main.py` | CLI 入口（preset, history, watch, digest） |
-| `src/pipeline.py` | 協調 extract→render→screenshot，支持三種 mode |
+| `src/pipeline.py` | 協調 extract→render→screenshot，支持四種 mode；`run_carousel_pipeline` 支援並行渲染（`parallel=True`，預設開啟）|
 | `src/extractor.py` | 多 provider AI 摘取（Claude/Gemini/GPT） |
 | `src/renderer.py` | Jinja2 渲染（28 主題 × 4 格式） |
 | `src/smart_renderer.py` | AI 動態佈局生成 |
@@ -74,7 +77,7 @@ Input → src/extractor.py → src/renderer.py → src/screenshotter.py → outp
 | `src/content.py` | Content dataclass + 狀態機 |
 | `src/prompt_logger.py` | LLM 呼叫完整日誌（`.tmp/prompts.db`） |
 | `src/learning.py` | LearningDAO — 審查學習數據（SQLite） |
-| `src/scrapers/` | football / tech / pmp 爬蟲 |
+| `src/scrapers/` | ai / football / pmp 爬蟲（Account A 用 AIScraper，14 個 AI 來源）|
 | `web/api.py` | FastAPI REST + SSE |
 | `web/frontend/` | React 19 + Zustand + TanStack Query |
 
@@ -173,7 +176,7 @@ curl http://localhost:8001/api/prompts/latest
 
 - `docs/guides/SMART_MODE_GUIDE.md` — Smart Mode 完整說明
 - `docs/guides/PROMPT_LOGGER_GUIDE.md` — Prompt Logger 使用指南
-- `docs/guides/TOKEN_OPTIMIZATION_ROADMAP.md` — Token 優化路線圖
+- `docs/guides/TOKEN_OPTIMIZATION_ROADMAP.md` — Token 優化路線圖（P0/P1 完成；P2 並行渲染已實作）
 - `docs/planning/elite-agent-learning-system.md` — 精英審查系統設計
 - `docs/reports/LEVELUP_IMPLEMENTATION.md` — LevelUp 實作細節
 - `web/frontend/API_GUIDE.md` — API 端點完整參考

@@ -32,8 +32,9 @@ class ExtractionConfig:
     title_max_chars: int = 15
     point_max_chars: int = 50
     custom_instructions: str = ""
-    mode: str = "card"  # "card" (key_points) or "article" (sections) or "smart" (AI layout)
+    mode: str = "card"  # "card" | "article" | "smart" | "carousel"
     social_mode: bool = False  # True = social-media optimised: shorter text + hook keyword per point
+    carousel_slides: int = 5  # Number of slides for carousel mode (3-7)
 
 
 _LANGUAGE_NAMES = {
@@ -135,6 +136,63 @@ def _build_article_prompt(config: ExtractionConfig) -> str:
 - 用具體數據取代模糊描述
 - 三段結構：核心概念→具體做法→關鍵細節
 - 動詞或名詞開頭，禁止虛詞開頭{custom_line}
+- 只返回 JSON，不要有任何前言或後語"""
+
+
+def _build_carousel_prompt(config: ExtractionConfig) -> str:
+    """Build a system prompt for carousel mode (multi-slide extraction)."""
+    lang_name = _LANGUAGE_NAMES.get(config.language, config.language)
+    tone_desc = _TONE_DESCRIPTIONS.get(config.tone, config.tone)
+    n = config.carousel_slides
+
+    custom_line = (
+        f"\n- 附加要求：{config.custom_instructions}"
+        if config.custom_instructions
+        else ""
+    )
+
+    return f"""你是一位社群媒體內容設計師，擅長將文章拆解為高互動的輪播圖（carousel）。
+
+使用 {lang_name} 輸出。語氣風格：{tone_desc}。
+
+將文章拆解為 {n} 張輪播圖，每張有明確的敘事角色。
+請嚴格按照以下 JSON 格式返回，不要包含任何其他文字：
+
+{{
+  "title": "系列總標題（{config.title_max_chars}字以內）",
+  "slides": [
+    {{
+      "slide_number": 1,
+      "role": "hook",
+      "heading": "這張的大標題（10字以內，視覺衝擊力最大化）",
+      "body": "1-2 句補充說明（40字以內）",
+      "visual_hint": "設計提示（如：大字居中、數據突出、引言風格）"
+    }}
+  ],
+  "source": "來源信息",
+  "theme_suggestion": "dark 或 light 或 gradient 或 warm_sun 或 cozy",
+  "hashtags": ["#標籤1", "#標籤2", "#標籤3"]
+}}
+
+每張 slide 的 role 必須是以下之一：
+- hook：第 1 張，用震撼標題/數據/問句抓住注意力
+- point：核心觀點或事實（可有多張）
+- data：關鍵數據、統計、對比（如有）
+- quote：引言、金句、專家觀點（如有）
+- cta：最後一張，總結 + 行動呼籲（追蹤/分享/留言）
+
+結構規則：
+- 第 1 張必須是 hook（問句、驚人數據或反直覺結論）
+- 最後 1 張必須是 cta
+- 中間 {n - 2} 張自由搭配 point/data/quote
+- 每張 heading 獨立可讀，不依賴上下文
+- 每張 body 最多 40 字，手機上 1 秒可掃完
+
+精簡規則（嚴格遵守）：
+- heading 以動詞、數字或問句開頭
+- 刪除所有修飾詞和過渡語
+- 用具體數據取代模糊描述
+- 每張只傳達一個核心信息{custom_line}
 - 只返回 JSON，不要有任何前言或後語"""
 
 
@@ -320,13 +378,16 @@ def extract_key_points(
 
     Returns:
         A dict with keys: title, key_points, source, theme_suggestion
+        (carousel mode returns: title, slides, source, theme_suggestion, hashtags)
 
     Raises:
         ValueError: If provider is unknown or response cannot be parsed
         EnvironmentError: If required API key is missing
     """
     cfg = config or ExtractionConfig()
-    if cfg.mode == "smart":
+    if cfg.mode == "carousel":
+        system_prompt = _build_carousel_prompt(cfg)
+    elif cfg.mode == "smart":
         system_prompt = _build_smart_prompt(cfg)
     elif cfg.mode == "article":
         system_prompt = _build_article_prompt(cfg)

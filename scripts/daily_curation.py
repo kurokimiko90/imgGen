@@ -29,7 +29,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from src.config import LevelUpConfig
 from src.content import AccountType, Content, ContentStatus, ContentType
 from src.db import ContentDAO
-from src.pipeline import PipelineOptions, run_pipeline
+from src.pipeline import PipelineOptions, run_pipeline, run_carousel_pipeline
 from src.scrapers.base_scraper import RawItem
 from src.scrapers.ai_scraper import AIScraper
 from src.scrapers.football_scraper import FootballScraper
@@ -255,25 +255,45 @@ def _call_claude(prompt: str, provider: str = "cli", model: str = "haiku") -> st
         raise ValueError(f"Unknown provider: {provider}. Use 'cli' or 'claude'.")
 
 
-def generate_image(body: str, theme: str, account_type: str) -> str | None:
-    """Generate an image card using the imgGen pipeline.
+def generate_image(
+    body: str,
+    theme: str,
+    account_type: str,
+    carousel: bool = False,
+    num_slides: int = 5,
+) -> str | None:
+    """Generate image card(s) using the imgGen pipeline.
 
-    Returns the image path string, or None on failure.
+    Args:
+        body: Article body text.
+        theme: Color theme/mood.
+        account_type: Account identifier (A/B/C).
+        carousel: If True, generate multi-slide carousel.
+        num_slides: Number of carousel slides (3-7).
+
+    Returns:
+        Image path (single) or comma-separated paths (carousel), or None on failure.
     """
     try:
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_path = OUTPUT_DIR / f"draft_{account_type}_{timestamp}.png"
 
         options = PipelineOptions(
             theme=theme,
             format="story",
-            provider="cli",  # Use Claude Code CLI by default (no API key needed)
+            provider="cli",
             mode="smart",
             color_mood=theme,
         )
-        _, img_path = run_pipeline(body, options, output_path)
-        return str(img_path)
+
+        if carousel:
+            carousel_dir = OUTPUT_DIR / f"carousel_{account_type}_{timestamp}"
+            _, paths = run_carousel_pipeline(body, options, carousel_dir, num_slides=num_slides)
+            return ",".join(str(p) for p in paths)
+        else:
+            output_path = OUTPUT_DIR / f"draft_{account_type}_{timestamp}.png"
+            _, img_path = run_pipeline(body, options, output_path)
+            return str(img_path)
     except Exception as exc:
         print(f"[daily_curation] Image generation failed: {exc}")
         return None
@@ -291,6 +311,8 @@ async def curate_for_account(
     dao: ContentDAO,
     dry_run: bool = False,
     skip_image: bool = False,
+    carousel: bool = False,
+    num_slides: int = 5,
     progress_callback=None,  # callback(type: str, **kwargs) for SSE streaming
 ) -> int:
     """Run the full curation pipeline for one account.
@@ -357,6 +379,8 @@ async def curate_for_account(
                     ai_output["body"],
                     account_config.color_mood,
                     account_type,
+                    carousel=carousel,
+                    num_slides=num_slides,
                 )
 
             content = Content(
@@ -403,9 +427,11 @@ async def curate_for_account(
 @click.option("--account", default=None, type=click.Choice(["A", "B", "C"]), help="只執行指定帳號")
 @click.option("--dry-run", is_flag=True, help="列印草稿但不寫入 DB 或產生圖片")
 @click.option("--no-image", is_flag=True, help="跳過圖片生成（僅評估內容）")
+@click.option("--carousel", is_flag=True, help="生成輪播圖（5 張 slides）")
+@click.option("--slides", default=5, type=click.IntRange(3, 7), help="輪播圖張數（3-7）")
 @click.option("--db-path", default=str(DEFAULT_DB_PATH), help="DB 路徑")
 @click.option("--config-path", default=str(DEFAULT_CONFIG_PATH), help="帳號設定路徑")
-def main(account, dry_run, no_image, db_path, config_path):
+def main(account, dry_run, no_image, carousel, slides, db_path, config_path):
     """Daily content curation — fetch, AI-curate, and save DRAFTs."""
     config = LevelUpConfig(config_path)
     dao = ContentDAO(db_path)
@@ -417,7 +443,11 @@ def main(account, dry_run, no_image, db_path, config_path):
         for acct in accounts_to_run:
             scraper = SCRAPERS[acct]()
             tasks.append(
-                curate_for_account(acct, scraper, config, dao, dry_run=dry_run, skip_image=no_image)
+                curate_for_account(
+                    acct, scraper, config, dao,
+                    dry_run=dry_run, skip_image=no_image,
+                    carousel=carousel, num_slides=slides,
+                )
             )
         results = await asyncio.gather(*tasks, return_exceptions=True)
 

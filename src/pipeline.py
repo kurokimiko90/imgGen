@@ -156,3 +156,75 @@ def run_pipeline(
     )
     final_path = render_and_capture(data, options, output_path)
     return data, final_path
+
+
+def run_carousel_pipeline(
+    article_text: str,
+    options: PipelineOptions,
+    output_dir: Path,
+    num_slides: int = 5,
+) -> tuple[dict[str, Any], list[Path]]:
+    """Carousel pipeline: extract slides → render each → screenshot each.
+
+    Args:
+        article_text: Raw article text.
+        options: Pipeline options (theme, format, provider, etc.).
+        output_dir: Directory to write slide images into.
+        num_slides: Number of slides to generate (3-7).
+
+    Returns:
+        Tuple of (extracted_data_with_slides, list_of_image_paths).
+    """
+    from src.extractor import ExtractionConfig as _EC
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Extract with carousel mode
+    extraction_config = _EC(
+        mode="carousel",
+        carousel_slides=num_slides,
+        **({"social_mode": True} if options.mode == "smart" else {}),
+    )
+
+    data = extract(
+        article_text,
+        provider=options.provider,
+        extraction_config=extraction_config,
+        model_variant=options.model_variant,
+    )
+
+    slides = data.get("slides", [])
+    if not slides:
+        raise ValueError("Carousel extraction returned no slides")
+
+    # Render each slide as a separate image
+    image_paths: list[Path] = []
+    total = len(slides)
+
+    for slide in slides:
+        idx = slide.get("slide_number", len(image_paths) + 1)
+        slide_path = output_dir / f"slide_{idx:02d}.png"
+
+        # Convert slide to the data format render_and_capture expects
+        slide_data = {
+            "title": slide.get("heading", ""),
+            "key_points": [{"text": slide.get("body", "")}],
+            "source": data.get("source", ""),
+            "theme_suggestion": data.get("theme_suggestion", options.theme),
+            # Pass carousel metadata for templates
+            "_carousel": True,
+            "_slide_role": slide.get("role", "point"),
+            "_visual_hint": slide.get("visual_hint", ""),
+        }
+
+        path = render_and_capture(
+            slide_data,
+            options,
+            slide_path,
+            thread_index=idx,
+            thread_total=total,
+        )
+        image_paths.append(path)
+
+    return data, image_paths

@@ -31,6 +31,7 @@ from src.content import AccountType, Content, ContentStatus, ContentType
 from src.db import ContentDAO
 from src.pipeline import PipelineOptions, run_pipeline
 from src.scrapers.base_scraper import RawItem
+from src.scrapers.ai_scraper import AIScraper
 from src.scrapers.football_scraper import FootballScraper
 from src.scrapers.pmp_scraper import PMPScraper
 from src.scrapers.tech_scraper import TechScraper
@@ -41,7 +42,7 @@ OUTPUT_DIR = PROJECT_ROOT / "output"
 
 # Account → scraper mapping
 SCRAPERS: dict[str, type] = {
-    "A": TechScraper,
+    "A": AIScraper,
     "B": PMPScraper,
     "C": FootballScraper,
 }

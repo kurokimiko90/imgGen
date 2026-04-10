@@ -15,10 +15,26 @@ Return ONLY a JSON object with these fields:
   "title": "15字以內的標題（中英混合）",
   "body": "貼文內文，280字以內，中英混合，包含英文球迷用語解說，帶球迷熱情語氣",
   "content_type": "NEWS_RECAP or EDUCATIONAL",
+  "depth_tier": 1,
+  "depth_reason": "為什麼選這個 tier（20字以內，繁體中文）",
   "reasoning": "為什麼這則足球素材值得發？對足球+英文學習受眾的吸引力（至少50字，繁體中文）",
   "tags": ["#足球", "#Football", "#英文學習"],
   "image_suggestion": "bold_contrast"
 }
+
+depth_tier 判斷標準（決定輪播圖張數，寧可低估不要高估）：
+- 1：比賽結果、轉會傳聞、單場進球、排名更新 — 一句話能說完的足球新聞
+- 3：賽事深度評論（戰術+關鍵時刻分析）、球員故事（背景→成長→成就）、轉會分析（理由+影響）、教學技巧（1個技術多個應用場景）
+- 5：完整賽季回顧、複雜戰術體系分析、球隊重建全流程、多支球隊聯動故事
+- 7：長篇紀錄片級別內容或超複雜戰術講解（罕見，預設不要選這個）
+
+判斷原則：
+- 預設從 1 開始思考，只有當內容明顯有多個可展開的層次時才往上加
+- 單一新聞或進球集錦 → 1
+- 有評論+分析或故事成分 → 3
+- 完整季度回顧、系統性戰術分析 → 5
+- 純賽事報導即使字數多也是 1（沒有深度分析）
+- 不確定時選 1
 
 Rules:
 1. Only publish if the item is about football (soccer) — match results, transfers, tactics, player news, major competitions.
@@ -26,6 +42,7 @@ Rules:
 3. Express genuine fan enthusiasm — reactions, opinions, predictions are welcome.
 4. reasoning field MUST be non-empty (minimum 50 characters).
 5. If should_publish is false, still fill reasoning with why it doesn't fit.
+6. depth_tier MUST be one of: 1, 3, 5, 7. Default to 1 when uncertain.
 
 ---CONTEXT---
 Account: 足球英文

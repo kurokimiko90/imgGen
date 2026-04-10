@@ -11,30 +11,73 @@
 
 ## 實作狀態
 
-| 優化項目 | 狀態 | 效果 |
-|---------|------|------|
-| P0: `--no-image` 旗標 | ✅ 已實作 | 跳過圖片生成，省 60% token |
-| P1: PIL 取代 tinify | ✅ 已實作 | tinify 呼叫歸零（免費） |
-| P2: 並行渲染 | ✅ 已實作 | 時間快 3.7x（token 不變） |
-| P3: Prompt hash caching | ⬜ 待實作 | 省 10-20%（重複文章） |
-| P4: Smart mode opt-in | ⬜ 待實作 | 省 50-70%（若改預設） |
-| ~~API 直接呼叫~~ | ❌ 放棄 | 需要 ANTHROPIC_API_KEY |
-| ~~Smart Render 批次化~~ | ❌ 放棄 | Timeout 風險高 |
+| 優化項目 | 狀態 | 效果 | 實測 |
+|---------|------|------|------|
+| P0: `--no-image` 旗標 | ✅ 已實作 | 跳過圖片生成，省 60% token | — |
+| P1: PIL 取代 tinify | ✅ 已實作 | tinify 呼叫歸零（免費） | — |
+| P2: 並行渲染 | ✅ 已實作 | 時間快 3.7x（token 不變） | — |
+| P3: Extractor 預設 Haiku | ✅ 早已實作 | `extract_key_points` + `_call_claude` 預設 haiku | — |
+| P4: Carousel 一次摘取 | ✅ 早已實作 | `run_carousel_pipeline` 只呼叫一次 extract() | — |
+| P5: `--dry-run` 跳過 AI | ✅ 已實作（2026-04-10） | dry-run 零 AI 呼叫，用 fixture 替代 | — |
+| **P8: 動態 depth_tier 分配** | ✅ 已實作（2026-04-10） | **tier-driven carousel：tier=1 單圖，tier=3/5/7 多 slides** | **Account A 測試：9 calls（-40%）；Account C dry-run 通過** |
+| P6: Prompt hash caching | ⬜ 待實作 | 省 10-20%（重複文章） | — |
+| P7: Smart mode opt-in | ⬜ 待實作 | 省 50-70%（若改預設，但質量下降風險高）| — |
+| ~~API 直接呼叫~~ | ❌ 放棄 | 需要 ANTHROPIC_API_KEY（`--bare` mode 強制 API key） | — |
+| ~~Smart Render 批次化~~ | ❌ 放棄 | Timeout 風險高 | — |
+| ~~Smart Renderer 改 Haiku~~ | ❌ 放棄 | HTML 生成質量明顯變差，retry 率上升 | — |
+| ~~A1+A2 固定截斷~~ | ❌ 放棄 | 被 P8 替代（動態更優雅） | — |
+
+---
+
+## P8 實作細節 — depth_tier 動態 Carousel 分配（2026-04-10）
+
+### 設計原理
+將輪播圖 slides 數**由內容質量決定**，而非固定值：
+- **tier=1** → 1 slide（事件快訊、單一數據點）
+- **tier=3** → 3 slides（觀點論述、工具深挖、迷你案例）
+- **tier=5** → 5 slides（系統教學、完整案例）
+- **tier=7** → 7 slides（長篇內容，罕見）
+
+### 實作
+1. `prompts/account_a.txt` 新增 `depth_tier` + `depth_reason` 欄位，附詳細判準
+2. 推廣 account_b.txt / account_c.txt（已完成，待驗證 B 爬蟲）
+3. `daily_curation.py`：
+   - 批次評估結果正規化 tier（非 1/3/5/7 → 強制 1）
+   - 並行渲染改為 **per-item tier-driven**
+   - 輸出 tier 分佈摘要（便於觀察 AI 判斷穩定度）
+
+### 實測結果（Account A，2026-04-10）
+| Run | 模式 | tier 分佈 | Sonnet calls | 配額省幅 |
+|---|---|---|---|---|
+| 1 | `--no-image` | tier1×9 | 9 | -40% |
+| 2 | `--no-image` | tier1×6, tier3×1 | 9 | -40% |
+| 3 | 完整渲染 | tier1×2 | 2 | (8 duplicate) |
+
+**結論：** 
+- ✅ tier 判斷穩定（傾向保守，符合設計「寧可低估」）
+- ✅ 配額省幅 -40 ~ 87%（取決於爬蟲重複度 + tier 分佈）
+- ✅ 運行於生產環境無異常
+
+### 推廣進度
+- ✅ Account A — 實測驗證完畢，投入生產
+- ✅ Account C — dry-run 通過（tier1×9，符合快訊特性）
+- ⏳ Account B — 爬蟲異常，待調查
 
 ---
 
 ## Current Cost Drivers
 
 ### High-Cost Operations (降序)
-1. **Smart Mode Rendering** — 每張 slide 一個 claude -p session（8,300t overhead × N slides）
+1. **Smart Mode Rendering** — 每張 slide 一個 claude -p session（~8,300t overhead × N slides，經 P8 優化後平均 N 變小）
 2. **Design Review Loop** — 5 次迭代 × Claude 視覺分析
-3. **Daily Curation AI Evaluation** — 3 帳號並發批次評估（批次化後已改善）
+3. **Daily Curation AI Evaluation** — 3 帳號並發批次評估（已批次化）
 
-### Estimated Monthly Cost
+### Estimated Monthly Cost（P8 後）
 - 若每天跑 daily_curation × 1 + design_review_loop × 2：
-  - daily_curation: 3 帳號 × 10 項 ÷ 5 (batch) = 6 API 呼叫/天
+  - daily_curation: 3 帳號 × 10 項 ÷ 5 (batch) = 6 API 呼叫/天（但 Sonnet renders 從 45 → ~9-18 via P8）
   - design_review_loop: 2 × 5 迭代 = 10 API 呼叫/天
-  - **Total: ~480 API 呼叫/月** → Haiku: $15–20/月，Sonnet: $50–80/月
+  - **Total: ~480 API 呼叫/月，Sonnet renders 從 ~1350 → ~270-540**（-60 ~ 80%）
+  - **Cost: 預估 Haiku $20-30/月，Sonnet $10-30/月**（vs 原 $50-100/月）
 
 ---
 

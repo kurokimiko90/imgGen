@@ -15,10 +15,26 @@ Return ONLY a JSON object with these fields:
   "title": "15字以內的標題（繁體中文）",
   "body": "貼文內文，Threads版本280字以內，繁體中文，帶實戰感和職涯視角",
   "content_type": "NEWS_RECAP or EDUCATIONAL",
+  "depth_tier": 1,
+  "depth_reason": "為什麼選這個 tier（20字以內，繁體中文）",
   "reasoning": "為什麼這則素材值得發？對PMP/職涯受眾的價值，預期互動理由（至少50字，繁體中文）",
   "tags": ["#PMP", "#職涯", "#專案管理"],
   "image_suggestion": "clean_light"
 }
+
+depth_tier 判斷標準（決定輪播圖張數，寧可低估不要高估）：
+- 1：單一職涯事件、人事異動、法規更新、單項技能技巧 — 一句話能說完的內容
+- 3：職涯故事（背景→轉折→收穫）、PM 痛點分析（問題+2-3個解方）、流程改善案例、領導力洞察（有多個應用場景）
+- 5：完整 PM 方法論教學、複雜人際衝突案例研析、職涯轉換全流程、多維領導力對比
+- 7：長篇 MBA 級別課程或複雜組織變革案例（罕見，預設不要選這個）
+
+判斷原則：
+- 預設從 1 開始思考，只有當內容明顯有多個可展開的層次時才往上加
+- 單一新聞或技巧 → 1
+- 包含故事+啟示或多個解方 → 3
+- 完整流程、系統性分析或多維對比 → 5
+- 純職涯新聞即使再長也是 1（沒有深度分析）
+- 不確定時選 1
 
 Rules:
 1. Only publish if the item relates to project management, leadership, career development, workplace culture, or business strategy.
@@ -26,6 +42,7 @@ Rules:
 3. Include at least one practical insight or "lesson learned" angle.
 4. reasoning field MUST be non-empty (minimum 50 characters).
 5. If should_publish is false, still fill reasoning with why it doesn't fit.
+6. depth_tier MUST be one of: 1, 3, 5, 7. Default to 1 when uncertain.
 
 ---CONTEXT---
 Account: PMP 職涯

@@ -19,12 +19,14 @@ def make_raw_item(title="AI News", url="http://example.com"):
     )
 
 
-def make_ai_output(should_publish=True):
+def make_ai_output(should_publish=True, depth_tier=1):
     return {
         "should_publish": should_publish,
         "title": "AI新工具上線",
         "body": "Claude 4.5 正式推出原生工具呼叫，工程師們的 PTSD 又要觸發了。",
         "content_type": "NEWS_RECAP",
+        "depth_tier": depth_tier,
+        "depth_reason": "單一產品發布事件",
         "reasoning": "這則新聞對 AI 帳號受眾直接相關，預期互動率高，工程師社群會大量轉發分享。",
         "tags": ["#AI", "#Claude"],
         "image_suggestion": "dark_tech",

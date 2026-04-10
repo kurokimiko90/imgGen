@@ -15,10 +15,26 @@ Return ONLY a JSON object with these fields:
   "title": "15字以內的標題（繁體中文）",
   "body": "貼文內文，符合最短平台字數限制（280字以內），繁體中文，帶帳號語氣",
   "content_type": "NEWS_RECAP",
+  "depth_tier": 1,
+  "depth_reason": "為什麼選這個 tier（20字以內，繁體中文）",
   "reasoning": "為什麼這則素材值得發？預期它會火的理由，目標受眾的共鳴點（至少50字，繁體中文）",
   "tags": ["#AI", "#自動化"],
   "image_suggestion": "dark_tech"
 }
+
+depth_tier 判斷標準（決定輪播圖張數，寧可低估不要高估）：
+- 1：事件快訊、單一數據點、產品發布、價格調整、公告 — 一句話能說完的內容
+- 3：觀點論述（論點+2-3個論據）、單一工具/技巧深挖、迷你案例、產品對比（2選1）
+- 5：系統教學、完整案例剖析（背景/問題/方案/結果/啟示）、多維對比（3+面向）、Top-N 深度列表
+- 7：長篇 tutorial 或複雜多視角議題（罕見，預設不要選這個）
+
+判斷原則：
+- 預設從 1 開始思考，只有當內容明顯有多個可展開的層次時才往上加
+- 標題只有一個事實 → 1
+- 摘要能列出 2-3 個清晰論點 → 3
+- 內容包含完整流程、步驟、或多維分析 → 5
+- 純新聞轉述無論多長都是 1（沒有展開空間）
+- 不確定時選 1
 
 Rules:
 1. Only publish if the item is directly relevant to AI, automation, developer tools, or LLM/agent topics.
@@ -26,6 +42,7 @@ Rules:
 3. Add a twist, hook, or ironic observation when possible.
 4. reasoning field MUST be non-empty (minimum 50 characters).
 5. If should_publish is false, still fill reasoning with why it doesn't fit.
+6. depth_tier MUST be one of: 1, 3, 5, 7. Default to 1 when uncertain.
 
 ---CONTEXT---
 Account: AI 自動化

@@ -165,6 +165,12 @@ def call_claude_api_batch(
                 raise ValueError(f"Item {idx} missing 'should_publish'")
             if result.get("should_publish") and not result.get("reasoning", "").strip():
                 raise ValueError(f"Item {idx}: reasoning is empty but should_publish=true")
+            # Normalize depth_tier: must be 1, 3, 5, or 7. Default to 1 on missing/invalid.
+            tier = result.get("depth_tier", 1)
+            if tier not in (1, 3, 5, 7):
+                print(f"[batch] Item {idx}: invalid depth_tier={tier!r}, defaulting to 1")
+                tier = 1
+            result["depth_tier"] = tier
             output.append(result)
 
         if len(output) != len(items):
@@ -283,7 +289,7 @@ def generate_image(
             format="story",
             provider="cli",
             mode="smart",
-            color_mood=theme,
+            color_mood=None,  # Let extractor pick color_mood from content (see extractor.py:292)
         )
 
         if carousel:
@@ -351,15 +357,31 @@ async def curate_for_account(
         return 0
 
     # Batch AI evaluation: single call for all items
-    # If batch fails, fall back to per-item calls
-    try:
-        ai_outputs = call_claude_api_batch(account_config.prompt_file, items_to_process)
-    except Exception as exc:
-        print(f"[{account_type}] Batch evaluation failed ({exc}), falling back to per-item...")
+    # dry-run skips AI entirely — use raw item data as fixture
+    if dry_run:
+        print(f"[{account_type}] dry-run: skipping AI evaluation, using raw items as fixture")
         ai_outputs = [
-            call_claude_api(account_config.prompt_file, item)
+            {
+                "should_publish": True,
+                "title": item.title,
+                "body": item.summary or item.title,
+                "content_type": "NEWS_RECAP",
+                "depth_tier": 1,
+                "depth_reason": "[dry-run fixture]",
+                "reasoning": "[dry-run fixture]",
+            }
             for item in items_to_process
         ]
+    else:
+        # If batch fails, fall back to per-item calls
+        try:
+            ai_outputs = call_claude_api_batch(account_config.prompt_file, items_to_process)
+        except Exception as exc:
+            print(f"[{account_type}] Batch evaluation failed ({exc}), falling back to per-item...")
+            ai_outputs = [
+                call_claude_api(account_config.prompt_file, item)
+                for item in items_to_process
+            ]
 
     # Filter to publishable items only, then generate images in parallel
     publishable = [
@@ -367,26 +389,51 @@ async def curate_for_account(
         for item, ai_output in zip(items_to_process, ai_outputs)
         if ai_output.get("should_publish")
     ]
+
+    # Log tier distribution for observability — detect if AI drifts toward a single tier
+    if publishable:
+        from collections import Counter
+        tier_counts = Counter(ao.get("depth_tier", 1) for _, ao in publishable)
+        tier_summary = ", ".join(f"tier{t}×{c}" for t, c in sorted(tier_counts.items()))
+        total_calls = sum(1 if t == 1 else t for t, c in tier_counts.items() for _ in range(c))
+        print(f"[{account_type}] Tier distribution: {tier_summary} "
+              f"(total Sonnet render calls: {total_calls})")
     for item, ai_output in zip(items_to_process, ai_outputs):
         if not ai_output.get("should_publish"):
             reason = ai_output.get("reasoning", "")
             print(f"[{account_type}] Skip: {item.title[:50]} — {reason[:60]}")
             _emit("item_skipped", title=item.title, reason=reason)
 
-    # Parallel image generation for all publishable items
+    # Parallel image generation for all publishable items.
+    # Slide count is driven by ai_output["depth_tier"] (1=single, 3/5/7=carousel),
+    # unless CLI `--carousel`/`--slides` explicitly overrides (force all items).
     image_paths: dict[int, str | None] = {}
     if not dry_run and not skip_image and publishable:
         import concurrent.futures
 
+        def _resolve_tier(ai_output: dict) -> tuple[bool, int]:
+            """Return (use_carousel, slide_count) for this item."""
+            if carousel:  # CLI override: force carousel mode for all items
+                return True, num_slides
+            tier = ai_output.get("depth_tier", 1)
+            if tier == 1:
+                return False, 1          # single image
+            return True, tier             # carousel with tier slides
+
         def _gen(idx_item_output):
             idx, (item, ai_output) = idx_item_output
+            use_carousel, slides = _resolve_tier(ai_output)
+            reason = ai_output.get("depth_reason", "")
+            print(f"[{account_type}] tier={ai_output.get('depth_tier', 1)} "
+                  f"({slides} {'slides' if use_carousel else 'slide'}) — "
+                  f"{item.title[:40]} | {reason}")
             _emit("generating_image", title=ai_output.get("title", item.title))
             return idx, generate_image(
                 ai_output["body"],
                 account_config.color_mood,
                 account_type,
-                carousel=carousel,
-                num_slides=num_slides,
+                carousel=use_carousel,
+                num_slides=slides,
             )
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(publishable)) as executor:

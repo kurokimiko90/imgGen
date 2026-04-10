@@ -1,0 +1,706 @@
+{
+  "communities": {
+    "0": [
+      "audit_rationale_1",
+      "audit_rationale_116",
+      "audit_rationale_189",
+      "audit_rationale_44",
+      "audit_rationale_77",
+      "base_scraper_rationale_14",
+      "base_scraper_rawitem",
+      "config_levelupconfig",
+      "config_levelupconfig_get_account",
+      "config_levelupconfig_list_accounts",
+      "config_rationale_301",
+      "config_rationale_323",
+      "config_rationale_339",
+      "content",
+      "content_accounttype",
+      "content_content",
+      "content_content_to_dict",
+      "content_contentstatus",
+      "content_contenttype",
+      "content_from_dict",
+      "content_rationale_1",
+      "content_rationale_55",
+      "content_rationale_97",
+      "daily_curation_rationale_1",
+      "daily_curation_rationale_103",
+      "daily_curation_rationale_183",
+      "daily_curation_rationale_258",
+      "daily_curation_rationale_294",
+      "daily_curation_rationale_406",
+      "daily_curation_rationale_56",
+      "daily_curation_rationale_69",
+      "db",
+      "db_contentdao",
+      "db_contentdao_create",
+      "db_contentdao_delete",
+      "db_contentdao_deserialize_row",
+      "db_contentdao_ensure_schema",
+      "db_contentdao_find_by_id",
+      "db_contentdao_find_by_source_url",
+      "db_contentdao_find_by_status",
+      "db_contentdao_find_drafts",
+      "db_contentdao_find_scheduled",
+      "db_contentdao_get_connection",
+      "db_contentdao_get_curation_stats",
+      "db_contentdao_init",
+      "db_contentdao_serialize_row",
+      "db_contentdao_update",
+      "db_rationale_1",
+      "db_rationale_107",
+      "db_rationale_137",
+      "db_rationale_166",
+      "db_rationale_213",
+      "db_rationale_23",
+      "db_rationale_238",
+      "db_rationale_255",
+      "db_rationale_287",
+      "db_rationale_334",
+      "db_rationale_37",
+      "db_rationale_375",
+      "db_rationale_84",
+      "db_rationale_94",
+      "enum",
+      "markdown_io_rationale_1",
+      "markdown_io_rationale_124",
+      "markdown_io_rationale_28",
+      "markdown_io_rationale_79",
+      "pipeline_pipelineoptions",
+      "str",
+      "tech_scraper_rationale_25",
+      "tech_scraper_techscraper",
+      "tech_scraper_techscraper_fetch",
+      "tech_scraper_techscraper_fetch_hacker_news",
+      "tech_scraper_techscraper_fetch_techcrunch"
+    ],
+    "1": [
+      "extractor",
+      "extractor_build_article_prompt",
+      "extractor_build_smart_prompt",
+      "extractor_build_system_prompt",
+      "extractor_extract_key_points",
+      "extractor_extract_with_claude",
+      "extractor_extract_with_claude_cli",
+      "extractor_extract_with_claude_cli_sync",
+      "extractor_extract_with_gemini",
+      "extractor_extract_with_gpt",
+      "extractor_extractionconfig",
+      "extractor_parse_and_validate",
+      "extractor_rationale_1",
+      "extractor_rationale_157",
+      "extractor_rationale_26",
+      "extractor_rationale_312",
+      "extractor_rationale_353",
+      "extractor_rationale_432",
+      "extractor_rationale_511",
+      "extractor_rationale_56",
+      "extractor_rationale_588",
+      "extractor_rationale_685",
+      "extractor_rationale_728",
+      "extractor_rationale_749",
+      "extractor_rationale_765",
+      "extractor_rationale_792",
+      "extractor_rationale_823",
+      "extractor_rationale_96",
+      "extractor_validate_article_data",
+      "extractor_validate_card_data",
+      "extractor_validate_extracted_data",
+      "extractor_validate_smart_data",
+      "pipeline",
+      "pipeline_extract",
+      "pipeline_rationale_1",
+      "pipeline_rationale_131",
+      "pipeline_rationale_21",
+      "pipeline_rationale_44",
+      "pipeline_rationale_71",
+      "pipeline_render_and_capture",
+      "pipeline_run_pipeline"
+    ],
+    "2": [
+      "abc",
+      "base_scraper",
+      "base_scraper_basescraper",
+      "base_scraper_basescraper_validate_items",
+      "base_scraper_fetch",
+      "base_scraper_rationale_1",
+      "base_scraper_rationale_24",
+      "base_scraper_rationale_35",
+      "basescraper",
+      "football_scraper",
+      "football_scraper_footballscraper",
+      "football_scraper_footballscraper_fetch",
+      "football_scraper_footballscraper_fetch_api_football",
+      "football_scraper_footballscraper_fetch_bbc_rss",
+      "football_scraper_footballscraper_fetch_japan_players",
+      "football_scraper_footballscraper_init",
+      "football_scraper_rationale_1",
+      "football_scraper_rationale_35",
+      "football_scraper_rationale_83",
+      "pmp_scraper",
+      "pmp_scraper_pmpscraper",
+      "pmp_scraper_pmpscraper_fetch",
+      "pmp_scraper_pmpscraper_fetch_hbr",
+      "pmp_scraper_pmpscraper_fetch_pmi",
+      "pmp_scraper_rationale_1",
+      "pmp_scraper_rationale_20",
+      "tech_scraper",
+      "tech_scraper_rationale_1"
+    ],
+    "3": [
+      "config",
+      "config_accountconfig",
+      "config_delete_preset",
+      "config_get_default",
+      "config_levelupconfig_init",
+      "config_levelupconfig_load",
+      "config_list_presets",
+      "config_load_config",
+      "config_load_preset",
+      "config_parse_toml_file",
+      "config_parse_toml_full",
+      "config_rationale_1",
+      "config_rationale_127",
+      "config_rationale_137",
+      "config_rationale_167",
+      "config_rationale_186",
+      "config_rationale_202",
+      "config_rationale_238",
+      "config_rationale_253",
+      "config_rationale_27",
+      "config_rationale_290",
+      "config_rationale_312",
+      "config_rationale_46",
+      "config_rationale_63",
+      "config_resolve_config_path",
+      "config_save_preset",
+      "config_write_toml"
+    ],
+    "4": [
+      "arch_master_plan",
+      "concept_accounts_abc",
+      "concept_content_state_machine",
+      "concept_hitl_review",
+      "concept_levelup_system",
+      "concept_persona",
+      "content_Content",
+      "content_ContentStatus",
+      "db_ContentDAO",
+      "markdown_io",
+      "markdown_io_export_markdown",
+      "markdown_io_import_markdown",
+      "markdown_io_parse_markdown",
+      "prd_imggen",
+      "prd_levelup",
+      "preflight",
+      "preflight_preflight_check",
+      "preflight_rationale_1",
+      "preflight_rationale_14",
+      "scrapers_BaseScraper",
+      "scrapers_PMPScraper",
+      "scrapers_TechScraper",
+      "scrapers_football",
+      "scripts_audit",
+      "scripts_daily_curation",
+      "spec_cycle4",
+      "spec_webui_review_curation"
+    ],
+    "5": [
+      "caption",
+      "caption_build_caption_prompt",
+      "caption_call_provider",
+      "caption_generate_captions",
+      "caption_rationale_1",
+      "caption_rationale_127",
+      "caption_rationale_271",
+      "caption_rationale_38",
+      "caption_rationale_68",
+      "caption_save_captions",
+      "concept_prompt_logger",
+      "guide_prompt_logger",
+      "prompt_logger",
+      "prompt_logger_clear_old_logs",
+      "prompt_logger_export_prompts_json",
+      "prompt_logger_get_latest_calls",
+      "prompt_logger_get_logs_by_stage",
+      "prompt_logger_get_statistics",
+      "prompt_logger_get_versions_by_system_hash",
+      "prompt_logger_hash_prompt",
+      "prompt_logger_init_db",
+      "prompt_logger_log_prompt_call",
+      "prompt_logger_rationale_1",
+      "prompt_logger_rationale_204",
+      "prompt_logger_rationale_79"
+    ],
+    "6": [
+      "concept_smart_mode",
+      "guide_smart_mode",
+      "smart_renderer",
+      "smart_renderer_build_design_system_css",
+      "smart_renderer_build_layout_prompt",
+      "smart_renderer_build_watermark_html",
+      "smart_renderer_call_provider",
+      "smart_renderer_fallback_to_template",
+      "smart_renderer_generate_smart_html",
+      "smart_renderer_inject_overlays",
+      "smart_renderer_load_system_prompt",
+      "smart_renderer_rationale_1",
+      "smart_renderer_rationale_103",
+      "smart_renderer_rationale_183",
+      "smart_renderer_rationale_216",
+      "smart_renderer_rationale_255",
+      "smart_renderer_rationale_344",
+      "smart_renderer_rationale_414",
+      "smart_renderer_rationale_453",
+      "smart_renderer_rationale_499",
+      "smart_renderer_rationale_568",
+      "smart_renderer_validate_generated_html"
+    ],
+    "7": [
+      "design_review_loop",
+      "design_review_loop_apply_patches",
+      "design_review_loop_build_prompt",
+      "design_review_loop_call_claude_cli",
+      "design_review_loop_compress_image_for_review",
+      "design_review_loop_extract_css_vars",
+      "design_review_loop_generate_screenshot",
+      "design_review_loop_issue",
+      "design_review_loop_loopsummary",
+      "design_review_loop_main",
+      "design_review_loop_parse_review",
+      "design_review_loop_rationale_1",
+      "design_review_loop_rationale_118",
+      "design_review_loop_rationale_137",
+      "design_review_loop_rationale_173",
+      "design_review_loop_rationale_216",
+      "design_review_loop_rationale_257",
+      "design_review_loop_rationale_275",
+      "design_review_loop_rationale_71",
+      "design_review_loop_rationale_99",
+      "design_review_loop_reviewresult",
+      "design_review_loop_run"
+    ],
+    "8": [
+      "history",
+      "history_connect",
+      "history_get_generation_by_id",
+      "history_get_stats",
+      "history_init_db",
+      "history_list_generations",
+      "history_migrate_extracted_data",
+      "history_rationale_1",
+      "history_rationale_106",
+      "history_rationale_127",
+      "history_rationale_164",
+      "history_rationale_189",
+      "history_rationale_206",
+      "history_rationale_40",
+      "history_rationale_49",
+      "history_rationale_59",
+      "history_rationale_85",
+      "history_record_generation",
+      "history_search_generations",
+      "history_update_generation"
+    ],
+    "9": [
+      "fetcher",
+      "fetcher_extract_article_text",
+      "fetcher_extract_meta",
+      "fetcher_extract_thread_items",
+      "fetcher_fetch_threads_content",
+      "fetcher_fetch_url_content",
+      "fetcher_is_threads_url",
+      "fetcher_parse_post",
+      "fetcher_rationale_1",
+      "fetcher_rationale_133",
+      "fetcher_rationale_142",
+      "fetcher_rationale_165",
+      "fetcher_rationale_77",
+      "fetcher_strip_html"
+    ],
+    "10": [
+      "watcher",
+      "watcher_debouncedhandler",
+      "watcher_debouncedhandler_flush",
+      "watcher_debouncedhandler_init",
+      "watcher_debouncedhandler_on_file_event",
+      "watcher_rationale_1",
+      "watcher_rationale_20",
+      "watcher_rationale_32",
+      "watcher_rationale_38",
+      "watcher_rationale_55",
+      "watcher_rationale_73",
+      "watcher_read_file_content",
+      "watcher_watch_directory"
+    ],
+    "11": [
+      "batch",
+      "batch_fetch_url_content",
+      "batch_parse_batch_file",
+      "batch_process_entry",
+      "batch_process_text",
+      "batch_rationale_1",
+      "batch_rationale_100",
+      "batch_rationale_139",
+      "batch_rationale_16",
+      "batch_rationale_37",
+      "batch_rationale_48",
+      "batch_run_batch"
+    ],
+    "12": [
+      "llm_forge_reporter",
+      "llm_forge_reporter_calculate_cost",
+      "llm_forge_reporter_flush_and_shutdown",
+      "llm_forge_reporter_flush_offline_queue",
+      "llm_forge_reporter_hash_text",
+      "llm_forge_reporter_init_llm_forge_auto_report",
+      "llm_forge_reporter_llmcallrecord",
+      "llm_forge_reporter_load_offline_queue",
+      "llm_forge_reporter_rationale_1",
+      "llm_forge_reporter_record_llm_call",
+      "llm_forge_reporter_report_to_hub",
+      "llm_forge_reporter_save_offline_queue"
+    ],
+    "13": [
+      "daily_curation",
+      "daily_curation_call_claude",
+      "daily_curation_call_claude_api",
+      "daily_curation_call_claude_api_batch",
+      "daily_curation_curate_for_account",
+      "daily_curation_generate_image",
+      "daily_curation_load_prompt",
+      "daily_curation_main"
+    ],
+    "14": [
+      "audit",
+      "audit_audit",
+      "audit_display_content",
+      "audit_handle_action",
+      "audit_open_editor",
+      "audit_print_summary",
+      "audit_run_interactive"
+    ],
+    "15": [
+      "digest",
+      "digest_build_digest_input",
+      "digest_generate_digest",
+      "digest_rationale_1",
+      "digest_rationale_33",
+      "digest_rationale_53"
+    ],
+    "16": [
+      "screenshotter",
+      "screenshotter_rationale_1",
+      "screenshotter_rationale_39",
+      "screenshotter_rationale_95",
+      "screenshotter_take_screenshot",
+      "screenshotter_take_screenshot_async"
+    ],
+    "17": [
+      "renderer",
+      "renderer_load_watermark_data",
+      "renderer_rationale_1",
+      "renderer_rationale_37",
+      "renderer_rationale_75",
+      "renderer_render_card"
+    ],
+    "18": [
+      "scheduler",
+      "scheduler_assign_scheduled_times",
+      "scheduler_calculate_scheduled_time",
+      "scheduler_rationale_1",
+      "scheduler_rationale_20",
+      "scheduler_rationale_59"
+    ],
+    "19": [
+      "publisher",
+      "publisher_check_twitter_credentials",
+      "publisher_publish_to_twitter",
+      "publisher_rationale_1",
+      "publisher_rationale_23",
+      "publisher_rationale_52"
+    ],
+    "20": [
+      "clipboard",
+      "clipboard_copy_image_to_clipboard",
+      "clipboard_is_clipboard_supported",
+      "clipboard_rationale_1",
+      "clipboard_rationale_11",
+      "clipboard_rationale_16"
+    ],
+    "21": [
+      "content_content_transition_to",
+      "content_invalidtransitionerror",
+      "content_rationale_49",
+      "content_rationale_80",
+      "exception"
+    ],
+    "22": [
+      "config_levelupconfig_save",
+      "config_levelupconfig_save_account",
+      "config_rationale_343",
+      "config_rationale_377"
+    ],
+    "23": [
+      "plan_main",
+      "roadmap_cycle1",
+      "roadmap_cycle2"
+    ],
+    "24": [
+      "config_AccountConfig",
+      "config_LevelUpConfig"
+    ],
+    "25": [
+      "scripts_design_review",
+      "spec_cycle3v2"
+    ],
+    "26": [
+      "concept_webui_phases",
+      "report_levelup_impl"
+    ],
+    "27": [
+      "init"
+    ],
+    "28": [
+      "content_rationale_110"
+    ],
+    "29": [
+      "base_scraper_rationale_28"
+    ],
+    "30": [
+      "pipeline_PipelineOptions"
+    ],
+    "31": [
+      "extractor_ExtractionConfig"
+    ],
+    "32": [
+      "scrapers_RawItem"
+    ],
+    "33": [
+      "roadmap_cycle3"
+    ],
+    "34": [
+      "roadmap_cycle4"
+    ],
+    "35": [
+      "roadmap_cycle5"
+    ],
+    "36": [
+      "spec_cycle2"
+    ],
+    "37": [
+      "spec_webui_unified"
+    ],
+    "38": [
+      "arch_system_design"
+    ],
+    "39": [
+      "arch_ux_architecture"
+    ],
+    "40": [
+      "report_automation_pipeline"
+    ],
+    "41": [
+      "backlog_levelup_backlog"
+    ],
+    "42": [
+      "concept_token_optimization"
+    ],
+    "43": [
+      "concept_html_css_rendering"
+    ]
+  },
+  "cohesion": {
+    "0": 0.08,
+    "1": 0.09,
+    "2": 0.1,
+    "3": 0.11,
+    "4": 0.09,
+    "5": 0.09,
+    "6": 0.13,
+    "7": 0.14,
+    "8": 0.17,
+    "9": 0.22,
+    "10": 0.19,
+    "11": 0.2,
+    "12": 0.33,
+    "13": 0.5,
+    "14": 0.57,
+    "15": 0.4,
+    "16": 0.4,
+    "17": 0.33,
+    "18": 0.4,
+    "19": 0.4,
+    "20": 0.4,
+    "21": 0.4,
+    "22": 0.5,
+    "23": 0.67,
+    "24": 1.0,
+    "25": 1.0,
+    "26": 1.0,
+    "27": 1.0,
+    "28": 1.0,
+    "29": 1.0,
+    "30": 1.0,
+    "31": 1.0,
+    "32": 1.0,
+    "33": 1.0,
+    "34": 1.0,
+    "35": 1.0,
+    "36": 1.0,
+    "37": 1.0,
+    "38": 1.0,
+    "39": 1.0,
+    "40": 1.0,
+    "41": 1.0,
+    "42": 1.0,
+    "43": 1.0
+  },
+  "gods": [
+    {
+      "id": "content_content",
+      "label": "Content",
+      "edges": 42
+    },
+    {
+      "id": "content_contentstatus",
+      "label": "ContentStatus",
+      "edges": 36
+    },
+    {
+      "id": "db_contentdao",
+      "label": "ContentDAO",
+      "edges": 35
+    },
+    {
+      "id": "config_levelupconfig",
+      "label": "LevelUpConfig",
+      "edges": 21
+    },
+    {
+      "id": "base_scraper_rawitem",
+      "label": "RawItem",
+      "edges": 20
+    },
+    {
+      "id": "football_scraper_footballscraper",
+      "label": "FootballScraper",
+      "edges": 18
+    },
+    {
+      "id": "content_accounttype",
+      "label": "AccountType",
+      "edges": 17
+    },
+    {
+      "id": "pipeline_pipelineoptions",
+      "label": "PipelineOptions",
+      "edges": 17
+    },
+    {
+      "id": "pmp_scraper_pmpscraper",
+      "label": "PMPScraper",
+      "edges": 16
+    },
+    {
+      "id": "tech_scraper_techscraper",
+      "label": "TechScraper",
+      "edges": 16
+    }
+  ],
+  "surprises": [
+    {
+      "source": "Prompt Logger LLM Tracking",
+      "target": "log_prompt_call()",
+      "source_files": [
+        "docs/guides/PROMPT_LOGGER_GUIDE.md",
+        "src/prompt_logger.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "implements",
+      "why": "inferred connection - not explicitly stated in source; crosses file types (code \u2194 doc); connects across different repos/directories; peripheral node `Prompt Logger LLM Tracking` unexpectedly reaches hub `log_prompt_call()`"
+    },
+    {
+      "source": "Smart Mode AI-Driven Dynamic Layouts",
+      "target": "generate_smart_html()",
+      "source_files": [
+        "docs/guides/SMART_MODE_GUIDE.md",
+        "src/smart_renderer.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "implements",
+      "why": "inferred connection - not explicitly stated in source; crosses file types (code \u2194 doc); connects across different repos/directories; peripheral node `Smart Mode AI-Driven Dynamic Layouts` unexpectedly reaches hub `generate_smart_html()`"
+    },
+    {
+      "source": "HITL Review Workflow",
+      "target": "audit.py HITL Review Script",
+      "source_files": [
+        "docs/prd/levelUpPRD.md",
+        "scripts/audit.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "implements",
+      "why": "inferred connection - not explicitly stated in source; crosses file types (code \u2194 doc); connects across different repos/directories; peripheral node `HITL Review Workflow` unexpectedly reaches hub `audit.py HITL Review Script`"
+    },
+    {
+      "source": "Cycle 4 Spec \u2014 HITL",
+      "target": "audit.py HITL Review Script",
+      "source_files": [
+        "docs/specs/cycle_4_spec.md",
+        "scripts/audit.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "rationale_for",
+      "why": "crosses file types (code \u2194 doc); connects across different repos/directories; peripheral node `Cycle 4 Spec \u2014 HITL` unexpectedly reaches hub `audit.py HITL Review Script`"
+    },
+    {
+      "source": "Web UI Review+Curation Spec",
+      "target": "audit.py HITL Review Script",
+      "source_files": [
+        "docs/specs/webui_review_curation_spec.md",
+        "scripts/audit.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "conceptually_related_to",
+      "why": "crosses file types (code \u2194 doc); connects across different repos/directories; peripheral node `Web UI Review+Curation Spec` unexpectedly reaches hub `audit.py HITL Review Script`"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `PipelineOptions` connect `Audit & Review Workflow` to `AI Extraction Engine`, `Batch Processing`?",
+      "why": "High betweenness centrality (0.179) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `LevelUpConfig` connect `Audit & Review Workflow` to `Config & Account System`, `Misc: config levelupconfig save`?",
+      "why": "High betweenness centrality (0.119) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `render_and_capture()` connect `AI Extraction Engine` to `Misc: screenshotter`, `Misc: renderer`, `Smart Mode Dynamic Layouts`?",
+      "why": "High betweenness centrality (0.109) - this node is a cross-community bridge."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 37 inferred relationships involving `Content` (e.g. with `ContentDAO` and `src/db.py - Data Access Object for Content records in the LevelUp system.  Persi`) actually correct?",
+      "why": "`Content` has 37 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 32 inferred relationships involving `ContentStatus` (e.g. with `ContentDAO` and `src/db.py - Data Access Object for Content records in the LevelUp system.  Persi`) actually correct?",
+      "why": "`ContentStatus` has 32 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 19 inferred relationships involving `ContentDAO` (e.g. with `Content` and `ContentStatus`) actually correct?",
+      "why": "`ContentDAO` has 19 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 13 inferred relationships involving `LevelUpConfig` (e.g. with `scripts/audit.py \u2014 Human-in-the-loop content review system.  Usage:     python s` and `Print a single content card for review.`) actually correct?",
+      "why": "`LevelUpConfig` has 13 INFERRED edges - model-reasoned connections that need verification."
+    }
+  ]
+}

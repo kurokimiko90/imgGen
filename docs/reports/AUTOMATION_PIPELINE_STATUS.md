@@ -18,7 +18,13 @@
 ├─ FootballScraper  (src/scrapers/football_scraper.py)
 │  └─ BBC Sport RSS + API-Football → RawItem[]
 └─ PMPScraper       (src/scrapers/pmp_scraper.py)
-   └─ HBR RSS + PMI Blog RSS → RawItem[]
+   └─ 6 sources → RawItem[] (~23 items/run)
+      - Rebel's Guide to PM (Elizabeth Harrin)
+      - Online PM Courses (Mike Clayton)
+      - Fast Company Leadership
+      - Agile Alliance Blog
+      - HBR Managing People + HBR Leadership (topic RSS)
+      [舊源移除：HBR general RSS (SSL error)、PMI Blog (403)]
 
 【階段 2】AI 策展（自動）- daily_curation.py
 ├─ 讀取帳號配置 (~/.imggen/accounts.toml)
@@ -56,7 +62,7 @@
 | 1️⃣ 爬蟲 | TechScraper / FootballScraper / PMPScraper | ✅ 完整實現 | `src/scrapers/*.py` |
 | 2️⃣ AI 策展 | call_claude_api + curate_for_account | ✅ 完整實現 | `scripts/daily_curation.py` |
 | 3️⃣ 圖片生成 | run_pipeline (extract→render→screenshot) | ✅ 完整實現 | `src/pipeline.py` |
-| 3b️⃣ Smart Mode | generate_smart_html (cinematic 規則) | ✅ 已優化 | `src/smart_renderer.py` + `prompts/` |
+| 3b️⃣ Smart Mode | generate_smart_html (cinematic 規則) | ✅ 已優化，fence bug 已修復（2026-04-12） | `src/smart_renderer.py` + `prompts/` |
 | 4️⃣ 保存 DRAFT | ContentDAO.create | ✅ 完整實現 | `src/db.py` |
 | 5️⃣ 人工審核 | ReviewPage / audit.py | ✅ 完整實現 | `web/frontend/ReviewPage.tsx` |
 | 6️⃣ 排期發佈 | calculate_scheduled_time | ✅ 完整實現 | `src/scheduler.py` |
@@ -185,7 +191,7 @@ $ python -c "from src.publisher import publish_content; publish_content(...)"
 |---------|--------|--------|------|
 | 爬蟲獲取内容 | ✅ | ⚠️ | 代碼完整，API key 依賴 |
 | AI 自動策展 | ✅ | ❌ | 代碼完整，API 認證阻斷 |
-| 圖片自動生成 | ✅ | ✅ | 已驗證，支持 smart + cinematic |
+| 圖片自動生成 | ✅ | ✅ | 已驗證，v2 pipeline 3 個 bug 修復（見 BUGFIX_20260412.md） |
 | 自動保存 DRAFT | ✅ | ⚠️ | 代碼完整，無法測試（AI 阻斷） |
 | Web UI 人工審核 | ✅ | ✅ | ReviewPage 完整運行 |
 | 自動排期 | ✅ | ⚠️ | 代碼完整，無法測試 |

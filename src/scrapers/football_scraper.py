@@ -1,12 +1,22 @@
 """
-src/scrapers/football_scraper.py - Football news scraper.
+src/scrapers/football_scraper.py - Football news scraper focused on Japanese players in Europe.
 
-Sources:
-  - BBC Sport Football RSS (no key required)
-  - API-Football via RapidAPI (optional, requires API_FOOTBALL_KEY env var)
-  - Google News RSS for Japan football players (no key required)
+兩層架構：
+  Layer 1 (CLUB_SOURCES): BBC Sport 各隊 RSS → 全收（有日本選手的俱樂部）
+  Layer 2 (GENERAL_SOURCES): 大型媒體 RSS → 姓名 word-boundary フィルタ後収録
+
+日本選手（截至 2025-08）:
+  PL:  Mitoma(Brighton), Endo(Liverpool), Tomiyasu(Arsenal), Kamada(Crystal Palace)
+  SPL: Furuhashi/Hatate/Maeda/Kobayashi(Celtic)
+  BL:  Doan(Freiburg), Ito H(Bayern), Itakura(Gladbach), Asano(Bochum)
+  LL:  Kubo(Real Sociedad)
+  L1:  Minamino(Monaco), Ito J(Reims), Nakamura(Reims)
+  PT:  Morita(Sporting CP)
+  ERE: Ueda(Feyenoord), Sugawara(AZ)
+  BEL: Machino(Gent)
 """
 
+import re
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -15,103 +25,168 @@ import httpx
 
 from src.scrapers.base_scraper import BaseScraper, RawItem
 
-BBC_SPORT_RSS = "https://feeds.bbci.co.uk/sport/football/rss.xml"
-API_FOOTBALL_BASE = "https://api-football-v1.p.rapidapi.com/v3"
-GOOGLE_NEWS_RSS = "https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"
-GOOGLE_NEWS_UA = "Mozilla/5.0 (compatible; feedparser)"
+# ── 日本選手（英語姓、word-boundary マッチ用）────────────────────────
+JAPAN_PLAYERS: dict[str, str] = {
+    # Premier League
+    "Mitoma":    "Brighton",
+    "Endo":      "Liverpool",
+    "Tomiyasu":  "Arsenal",
+    "Kamada":    "Crystal Palace",
+    # Scottish Premiership
+    "Furuhashi": "Celtic",
+    "Hatate":    "Celtic",
+    "Maeda":     "Celtic",
+    "Kobayashi": "Celtic",
+    # Bundesliga
+    "Doan":      "Freiburg",
+    "Ito":       "Bayern/Reims",   # Hiroki Ito & Junya Ito 両方
+    "Itakura":   "Gladbach",
+    "Asano":     "Bochum",
+    # La Liga
+    "Kubo":      "Real Sociedad",
+    # Ligue 1
+    "Minamino":  "Monaco",
+    "Nakamura":  "Reims",
+    # Primeira Liga
+    "Morita":    "Sporting",
+    # Eredivisie
+    "Ueda":      "Feyenoord",
+    "Sugawara":  "AZ",
+    # Belgian Pro League
+    "Machino":   "Gent",
+    # 転籍先不明 / 要確認
+    "Tanaka":    "",
+}
 
-# Japanese football players in Europe to track
-JAPAN_PLAYERS = [
-    {"name": "Mitoma", "team": "Brighton"},
-    {"name": "Endo", "team": "Liverpool"},
-    {"name": "Doan", "team": "Freiburg"},
-    {"name": "Tomiyasu", "team": "Arsenal"},
-    {"name": "Hatate", "team": "Celtic"},
-    {"name": "Furuhashi", "team": "Celtic"},
-]
+# 単語境界マッチ用パターン（"Ito" が "territory" にマッチしないよう \b を使う）
+_JAPAN_PATTERN = re.compile(
+    r"\b(" + "|".join(re.escape(k) for k in JAPAN_PLAYERS) + r")\b",
+    re.IGNORECASE,
+)
+
+# ── Layer 1: BBC Sport 各隊 RSS（有日本選手のクラブ、全収）────────────
+CLUB_SOURCES: dict[str, str] = {
+    # Premier League
+    "bbc_brighton":       "https://feeds.bbci.co.uk/sport/football/teams/brighton-and-hove-albion/rss.xml",
+    "bbc_liverpool":      "https://feeds.bbci.co.uk/sport/football/teams/liverpool/rss.xml",
+    "bbc_arsenal":        "https://feeds.bbci.co.uk/sport/football/teams/arsenal/rss.xml",
+    "bbc_crystal_palace": "https://feeds.bbci.co.uk/sport/football/teams/crystal-palace/rss.xml",
+    # Scottish Premiership
+    "bbc_celtic":         "https://feeds.bbci.co.uk/sport/football/teams/celtic/rss.xml",
+    # Ligue 1
+    "bbc_monaco":         "https://feeds.bbci.co.uk/sport/football/teams/monaco/rss.xml",
+    # Champions League / Europa (横断的カバー)
+    "theguardian_cl":     "https://www.theguardian.com/football/championsleague/rss",
+    "theguardian_transfers": "https://www.theguardian.com/football/transfers/rss",
+}
+
+# ── Layer 2: 大型メディア RSS（姓フィルタ後）────────────────────────
+GENERAL_SOURCES: dict[str, str] = {
+    "bbc_sport":              "https://feeds.bbci.co.uk/sport/football/rss.xml",
+    "espn_fc":                "https://www.espn.com/espn/rss/soccer/news",
+    "sky_sports":             "https://www.skysports.com/rss/12040",
+    "fourfourtwo":            "https://www.fourfourtwo.com/rss",
+    "theguardian_football":   "https://www.theguardian.com/football/rss",
+}
+
+MAX_PER_CLUB    = 10
+MAX_PER_GENERAL = 20   # 多く取ってフィルタ
+
+API_FOOTBALL_BASE = "https://api-football-v1.p.rapidapi.com/v3"
+
+_HTML_TAG  = re.compile(r"<[^>]+>")
+_MULTISPACE = re.compile(r"\s+")
+
+
+def _strip_html(text: str) -> str:
+    return _MULTISPACE.sub(" ", _HTML_TAG.sub(" ", text)).strip()
+
+
+def _is_japan_related(item: RawItem) -> bool:
+    """タイトル＋サマリーに日本選手の姓（単語境界）が含まれるか判定。"""
+    return bool(_JAPAN_PATTERN.search(item.title + " " + item.summary))
 
 
 class FootballScraper(BaseScraper):
-    """Scrapes football news from BBC Sport RSS and optionally API-Football."""
+    """
+    Layer 1: 俱樂部 BBC RSS → 全收
+    Layer 2: 大型メディア RSS → 姓キーワードフィルタ後収録
+    """
 
     def __init__(self, api_key: str | None = None):
         self.api_key = api_key or os.getenv("API_FOOTBALL_KEY")
 
     def fetch(self) -> list[RawItem]:
+        seen_urls: set[str] = set()
         items: list[RawItem] = []
-        # Fetch from all sources and interleave them to ensure diversity in curation
-        bbc_items = self._fetch_bbc_rss()
-        japan_items = self._fetch_japan_players()
-        api_items = self._fetch_api_football() if self.api_key else []
 
-        # Interleave sources to ensure variety (e.g., BBC, Japan, BBC, Japan, ...)
-        max_len = max(len(bbc_items), len(japan_items), len(api_items))
-        for i in range(max_len):
-            if i < len(bbc_items):
-                items.append(bbc_items[i])
-            if i < len(japan_items):
-                items.append(japan_items[i])
-            if i < len(api_items):
-                items.append(api_items[i])
+        for name, url in CLUB_SOURCES.items():
+            items.extend(self._fetch_rss(name, url, seen_urls, MAX_PER_CLUB, filter_japan=False))
 
-        return self.validate_items(items)
+        for name, url in GENERAL_SOURCES.items():
+            items.extend(self._fetch_rss(name, url, seen_urls, MAX_PER_GENERAL, filter_japan=True))
 
-    def _fetch_bbc_rss(self) -> list[RawItem]:
+        if self.api_key:
+            items.extend(self._fetch_api_football())
+
+        validated = self.validate_items(items)
+        japan_count = sum(1 for i in validated if _is_japan_related(i))
+        print(f"[FootballScraper] total={len(validated)}, japan_related={japan_count}")
+        return validated
+
+    def _fetch_rss(
+        self,
+        source_name: str,
+        feed_url: str,
+        seen_urls: set[str],
+        limit: int,
+        filter_japan: bool,
+    ) -> list[RawItem]:
         try:
-            feed = feedparser.parse(BBC_SPORT_RSS)
+            feed = feedparser.parse(feed_url, agent="Mozilla/5.0 (compatible; feedparser/6.0)")
+
+            if feed.bozo and not feed.entries:
+                print(f"[FootballScraper] {source_name}: skipped (parse error)")
+                return []
+
             result = []
-            for entry in feed.entries[:10]:
+            for entry in feed.entries[:limit]:
+                link = entry.get("link", "")
+                if not link or link in seen_urls:
+                    continue
+
                 pub = entry.get("published_parsed")
                 published_at = (
                     datetime(*pub[:6], tzinfo=timezone.utc) if pub else datetime.now(timezone.utc)
                 )
-                result.append(
-                    RawItem(
-                        title=entry.get("title", ""),
-                        url=entry.get("link", ""),
-                        summary=entry.get("summary", ""),
-                        published_at=published_at,
-                        source="bbc_sport",
-                    )
+
+                content = ""
+                if entry.get("content"):
+                    content = entry["content"][0].get("value", "")
+                if not content:
+                    content = entry.get("summary", "")
+                content = _strip_html(content)[:800]
+
+                item = RawItem(
+                    title=entry.get("title", ""),
+                    url=link,
+                    summary=content,
+                    published_at=published_at,
+                    source=source_name,
                 )
+
+                if filter_japan and not _is_japan_related(item):
+                    continue
+
+                seen_urls.add(link)
+                result.append(item)
+
+            print(f"[FootballScraper] {source_name}: {len(result)} items")
             return result
+
         except Exception as exc:
-            print(f"[FootballScraper] BBC RSS error: {exc}")
+            print(f"[FootballScraper] {source_name} error: {exc}")
             return []
-
-    def _fetch_japan_players(self) -> list[RawItem]:
-        """Fetch news about Japanese football players in Europe."""
-        items: list[RawItem] = []
-        seen_urls: set[str] = set()
-
-        for player in JAPAN_PLAYERS:
-            query = f"{player['name']}+{player['team']}+football"
-            url = GOOGLE_NEWS_RSS.format(query=query)
-            try:
-                feed = feedparser.parse(url, agent=GOOGLE_NEWS_UA)
-                for entry in feed.entries[:3]:  # Max 3 articles per player
-                    link = entry.get("link", "")
-                    if not link or link in seen_urls:
-                        continue
-                    seen_urls.add(link)
-                    pub = entry.get("published_parsed")
-                    published_at = (
-                        datetime(*pub[:6], tzinfo=timezone.utc)
-                        if pub else datetime.now(timezone.utc)
-                    )
-                    items.append(
-                        RawItem(
-                            title=entry.get("title", ""),
-                            url=link,
-                            summary=entry.get("summary", "")[:300],
-                            published_at=published_at,
-                            source="google_news_japan",
-                        )
-                    )
-            except Exception as exc:
-                print(f"[FootballScraper] Japan player {player['name']} error: {exc}")
-
-        return items
 
     def _fetch_api_football(self) -> list[RawItem]:
         items: list[RawItem] = []

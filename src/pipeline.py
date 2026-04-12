@@ -22,7 +22,7 @@ class PipelineOptions:
 
     theme: str = "dark"
     format: str = "story"
-    provider: str = "cli"
+    provider: str = "gemini"
     model_variant: str = "haiku"  # "haiku" (default, 3x cheaper), "sonnet", or "opus" for Claude provider
     scale: int = 2
     webp: bool = False
@@ -37,7 +37,7 @@ class PipelineOptions:
 
 def extract(
     article_text: str,
-    provider: str = "cli",
+    provider: str = "gemini",
     extraction_config: ExtractionConfig | None = None,
     model_variant: str = "haiku",
 ) -> dict[str, Any]:
@@ -114,6 +114,14 @@ def render_and_capture(
             thread_index=thread_index,
             thread_total=thread_total,
         )
+
+    import datetime, os
+    if os.environ.get("IMGGEN_SAVE_HTML", "1") != "0":
+        debug_dir = Path(__file__).parent.parent / "output" / "debug"
+        debug_dir.mkdir(parents=True, exist_ok=True)
+        ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        label = f"slide{thread_index}" if thread_index else options.format
+        (debug_dir / f"{ts}_{label}.html").write_text(html_content, encoding="utf-8")
 
     return take_screenshot(
         html_content,

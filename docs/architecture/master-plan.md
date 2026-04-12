@@ -127,7 +127,7 @@
 | `BaseScraper` ABC + `RawItem` dataclass | `src/scrapers/base_scraper.py` | ✅ |
 | `FootballScraper`（BBC RSS + API-Football） | `src/scrapers/football_scraper.py` | ✅ |
 | `TechScraper`（HN API + TechCrunch RSS） | `src/scrapers/tech_scraper.py` | ✅ |
-| `PMPScraper`（HBR RSS + PMI Blog RSS） | `src/scrapers/pmp_scraper.py` | ✅ |
+| `PMPScraper`（6 sources：Elizabeth Harrin / Mike Clayton / FastCompany / Agile Alliance / HBR topic RSS） | `src/scrapers/pmp_scraper.py` | ✅ |
 | 帳號 A/B/C Prompt 檔案（含 `reasoning` 欄位） | `prompts/account_*.txt` | ✅ |
 | `daily_curation.py`（async 多帳號策展） | `scripts/daily_curation.py` | ✅ |
 | 23 個測試（scrapers + daily_curation） | `tests/scrapers/` + `tests/test_daily_curation.py` | ✅ |
@@ -145,7 +145,7 @@
 |------|--------|------|
 | `football_scraper.py` | API-Football（免費 100 req/day）+ BBC Sport RSS | 賽果、賽程、球員數據 |
 | `tech_scraper.py` | Hacker News API + TechCrunch RSS + GitHub Trending | AI/科技新聞 |
-| `pmp_scraper.py` | Harvard Business Review RSS + PMI Blog RSS | 管理/職涯文章 |
+| `pmp_scraper.py` | Rebel's Guide to PM + Online PM Courses + FastCompany Leadership + Agile Alliance + HBR Managing People + HBR Leadership | 管理/職涯文章 |
 
 共用介面：
 ```python

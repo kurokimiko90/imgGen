@@ -63,7 +63,7 @@ def _build_caption_prompt(data: dict[str, Any], platforms: list[str]) -> str:
 def generate_captions(
     data: dict[str, Any],
     platforms: list[str],
-    provider: str = "cli",
+    provider: str = "gemini",
 ) -> dict[str, str]:
     """Generate captions for given platforms from extracted article data.
 

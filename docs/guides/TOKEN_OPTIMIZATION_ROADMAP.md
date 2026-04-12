@@ -20,6 +20,7 @@
 | P4: Carousel 一次摘取 | ✅ 早已實作 | `run_carousel_pipeline` 只呼叫一次 extract() | — |
 | P5: `--dry-run` 跳過 AI | ✅ 已實作（2026-04-10） | dry-run 零 AI 呼叫，用 fixture 替代 | — |
 | **P8: 動態 depth_tier 分配** | ✅ 已實作（2026-04-10） | **tier-driven carousel：tier=1 單圖，tier=3/5/7 多 slides** | **Account A 測試：9 calls（-40%）；Account C dry-run 通過** |
+| **P9: Palette 自動載入 + Carousel Role Prompt** | ✅ 已實作（2026-04-11） | **解鎖 Account A 配色單調（30 個 palette）+ 改進 carousel first-attempt 成功率** | **muse_spark 5 slides 全部 first-attempt 成功，無重試** |
 | P6: Prompt hash caching | ⬜ 待實作 | 省 10-20%（重複文章） | — |
 | P7: Smart mode opt-in | ⬜ 待實作 | 省 50-70%（若改預設，但質量下降風險高）| — |
 | ~~API 直接呼叫~~ | ❌ 放棄 | 需要 ANTHROPIC_API_KEY（`--bare` mode 強制 API key） | — |
@@ -62,6 +63,78 @@
 - ✅ Account A — 實測驗證完畢，投入生產
 - ✅ Account C — dry-run 通過（tier1×9，符合快訊特性）
 - ⏳ Account B — 爬蟲異常，待調查
+
+---
+
+## P9 實作細節 — Palette 自動載入 + Carousel Role Prompt（2026-04-11）
+
+### 問題診斷
+調查「為什麼 smart mode 生成的圖永遠黑底藍」發現 4 層硬編碼：
+1. `prompts/account_a.txt` 寫死 `Color mood: dark_tech.`
+2. JSON schema 例子也寫 `image_suggestion: "dark_tech"`
+3. 批次評估 Claude 照做，三篇文章都返回 `dark_tech`
+4. `src/smart_renderer.py` 的 `COLOR_PALETTES` 只有 5 個（`dark_tech` / `warm_earth` / `clean_light` / `bold_contrast` / `soft_pastel`）
+
+更大問題：**templates/ 目錄有 35 個 Jinja2 主題，每個都有獨特配色（warm_sun 橙漸層、luxury_data 黑紅、milestone 金褐、editorial 棕灰…），全部被 smart mode 遺棄**。設計資產割裂，smart mode 只能在 5 個窮酸選項裡轉。
+
+### 實作
+
+**1. Palette 自動載入（`src/smart_renderer.py`）**
+
+新增 `_load_palettes_from_templates()`，模組載入時掃描 `templates/*.html`：
+- `_parse_root_vars()` 用 regex 提取 `:root { --var: value; }` 區塊的所有 CSS 變數
+- `_VAR_CANDIDATES` heuristic 映射表把非標準變數名（`--orange`、`--ruby`、`--text-ink`、`--brown-deep`）歸類到 `bg` / `accent` / `text_primary` / `text_secondary` / `text_muted` / `border` 6 個標準 slot
+- `_build_palette_from_vars()` 組裝成 `COLOR_PALETTES` 相容的 CSS block
+- Fallback：`bg` 和 `text_primary` 缺失就跳過該 template；`accent` 缺失就 fallback 到 `text_primary`；其他欄位用中性默認值
+
+結果：
+- **25 個成功提取**（dark / light / editorial / warm_sun / cozy / luxury_data / milestone / picks / ranking / hook / quote_dark / data_impact …）
+- **5 個失敗**（`gradient` / `quote` / `versus` / `pop_split` / `ai_theater`）— 特殊雙色或玻璃態結構，fallback 到 5 個手寫 palette
+- **最終 COLOR_PALETTES = 30 個**（25 自動 + 5 fallback）
+
+**2. Carousel 專用 Prompt（`_build_layout_prompt`）**
+
+讀取 `_carousel` / `_slide_role` / `_visual_hint` / `_thread_index` / `_thread_total`，為 5 個 slide role 注入專屬設計指導：
+- `hook`: 單一焦點元素，40-56px 巨大 heading
+- `point`: 清晰層級，一個視覺錨點
+- `data`: 關鍵數字主導（60-96px），accent 色突出
+- `quote`: editorial 風，大引號 + 斜體
+- `cta`: 明確行動按鈕 + 箭頭
+
+還加了「CAROUSEL DESIGN RULES」硬規則：heading 為主元素、body 是短文本不是 key points list、禁止 fake widgets、禁止 dashboard chrome。
+
+**3. Account A Prompt 解鎖（`prompts/account_a.txt`）**
+
+移除 `Color mood: dark_tech.` 硬編碼，改為 30 個 palette 的分類選擇指南（深色系 / 淺色系 / 彩色系 × 內容類型），告訴 Claude「AI 自動化帳號不代表必須 dark」。JSON schema 的 `image_suggestion` 默認值從 `dark_tech` 改為 `dark`（更通用）。
+
+**4. Archive 重建腳本（`scripts/regenerate_carousel_smart.py`）**
+
+讀取 `.tmp/carousel_data.json` 的已提取 slide 結構，用 smart mode 直接渲染，跳過 extract 步驟。支援指定 palette 覆蓋。Parallel 渲染（ThreadPoolExecutor max_workers=5）。
+
+### 實測結果（muse_spark，2026-04-11）
+
+| 測試 | 結果 |
+|---|---|
+| hook slide 單獨測試（light palette） | ✅ Meta 藍漸層 + "16" 特寫，符合 visual_hint |
+| 完整 5 slides parallel（light palette） | ✅ 5 slides 全部 first-attempt 成功，無重試 |
+| 5 個 role 指導效果 | ✅ hook/point/data/quote/cta 全部被正確執行 |
+| 視覺一致性 | ✅ 白底 + 藍 accent 跨 5 slides 協調 |
+
+**小瑕疵：** Slide 4 的 "4/5" 進度標籤和 Claude 生成的 "04/" 文字撞在一起，watermark injector 和 Claude 生成的 carousel chrome 衝突。待後續修復（加在 prompt 禁止 Claude 自生成 "N/M" 類文字，或從 pipeline 側剝離）。
+
+### 尚未驗證
+- ⏳ Account A prompt 改動的效果（明早批次評估才會看到 Claude 是否真的選不同 palette）
+- ⏳ 其他 palette（`warm_sun` / `editorial` / `luxury_data` 等）在 carousel 中的實際效果
+- ⏳ Account B / C 的 prompt 尚未同步解鎖
+
+### 真實 Token 節省
+P9 **不直接減少 claude -p 呼叫數**，而是通過：
+1. **降低重試率**（visual_hint + role guidance 讓 first-attempt 成功率 ↑）
+2. **減少盲目創作**（Claude 有明確指導，不再發散嘗試）
+
+實測：muse_spark 5 slides first-attempt 全部成功，**0 次重試**。對比之前 smart mode 的平均重試率（約 20-30%），節省約 20% 的 Sonnet render tokens。
+
+組合 P8 + P9 後，預估 Sonnet render tokens 從基準 ~1350/月 → ~216-432/月（-68 ~ 84%）。
 
 ---
 

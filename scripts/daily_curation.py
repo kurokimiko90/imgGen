@@ -26,6 +26,9 @@ import click
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from dotenv import load_dotenv
+load_dotenv(PROJECT_ROOT / ".env")
+
 from src.config import LevelUpConfig
 from src.content import AccountType, Content, ContentStatus, ContentType
 from src.db import ContentDAO
@@ -66,7 +69,7 @@ def _load_prompt(prompt_file: str, item: RawItem) -> str:
     )
 
 
-def call_claude_api(prompt_file: str, item: RawItem, provider: str = "cli") -> dict:
+def call_claude_api(prompt_file: str, item: RawItem, provider: str = "gemini") -> dict:
     """Call Claude to curate content and return parsed JSON decision.
 
     Args:
@@ -99,7 +102,7 @@ def call_claude_api(prompt_file: str, item: RawItem, provider: str = "cli") -> d
 
 
 def call_claude_api_batch(
-    prompt_file: str, items: list[RawItem], provider: str = "cli"
+    prompt_file: str, items: list[RawItem], provider: str = "gemini"
 ) -> list[dict]:
     """Call Claude to curate multiple items in a single batch request.
 
@@ -257,49 +260,81 @@ def _call_claude(prompt: str, provider: str = "cli", model: str = "haiku") -> st
 
         return message.content[0].text
 
+    elif provider == "gemini":
+        from google import genai as google_genai
+
+        api_key = os.environ.get("GOOGLE_API_KEY")
+        if not api_key or api_key == "your_google_key_here":
+            raise ValueError(
+                "GOOGLE_API_KEY env var not set. Get one at https://aistudio.google.com/"
+            )
+
+        client = google_genai.Client(api_key=api_key)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash", contents=prompt
+        )
+        return response.text
+
     else:
-        raise ValueError(f"Unknown provider: {provider}. Use 'cli' or 'claude'.")
+        raise ValueError(f"Unknown provider: {provider}. Use 'cli', 'claude', or 'gemini'.")
 
 
 def generate_image(
-    body: str,
-    theme: str,
+    ai_output: dict,
     account_type: str,
     carousel: bool = False,
     num_slides: int = 5,
 ) -> str | None:
-    """Generate image card(s) using the imgGen pipeline.
+    """Generate image card(s) directly from AI evaluation output.
 
-    Args:
-        body: Article body text.
-        theme: Color theme/mood.
-        account_type: Account identifier (A/B/C).
-        carousel: If True, generate multi-slide carousel.
-        num_slides: Number of carousel slides (3-7).
+    Skips the extract() step — uses title/body from Gemini evaluation directly
+    to avoid a redundant LLM call and preserve content fidelity.
 
     Returns:
         Image path (single) or comma-separated paths (carousel), or None on failure.
     """
+    from src.pipeline import render_and_capture, run_carousel_pipeline
+    from src.smart_renderer import generate_smart_html
+    from src.screenshotter import take_screenshot
+
     try:
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        color_mood = ai_output.get("image_suggestion", "bold_contrast")
 
-        options = PipelineOptions(
-            theme=theme,
-            format="story",
-            provider="cli",
-            mode="smart",
-            color_mood=None,  # Let extractor pick color_mood from content (see extractor.py:292)
-        )
+        # Build data dict directly — no extract() needed
+        key_points = ai_output.get("key_points") or [
+            {"text": ai_output.get("body", ""), "importance": 3}
+        ]
+        data = {
+            "title": ai_output.get("title", ""),
+            "key_points": key_points,
+            "source": "",
+            "content_type": ai_output.get("content_type", "NEWS_RECAP"),
+        }
 
         if carousel:
+            # Carousel: smart mode with role-based prompts
+            options = PipelineOptions(
+                format="story",
+                provider="gemini",
+                mode="smart",
+                color_mood=color_mood,
+            )
             carousel_dir = OUTPUT_DIR / f"carousel_{account_type}_{timestamp}"
-            _, paths = run_carousel_pipeline(body, options, carousel_dir, num_slides=num_slides)
+            body_text = ai_output.get("body", ai_output.get("title", ""))
+            _, paths = run_carousel_pipeline(body_text, options, carousel_dir, num_slides=num_slides)
             return ",".join(str(p) for p in paths)
         else:
+            # Single image: static Jinja2 card — fills canvas reliably
+            options = PipelineOptions(
+                theme=color_mood,
+                format="story",
+                mode="card",
+            )
             output_path = OUTPUT_DIR / f"draft_{account_type}_{timestamp}.png"
-            _, img_path = run_pipeline(body, options, output_path)
-            return str(img_path)
+            final_path = render_and_capture(data, options, output_path)
+            return str(final_path)
     except Exception as exc:
         print(f"[daily_curation] Image generation failed: {exc}")
         return None
@@ -429,8 +464,7 @@ async def curate_for_account(
                   f"{item.title[:40]} | {reason}")
             _emit("generating_image", title=ai_output.get("title", item.title))
             return idx, generate_image(
-                ai_output["body"],
-                account_config.color_mood,
+                ai_output,
                 account_type,
                 carousel=use_carousel,
                 num_slides=slides,
@@ -458,7 +492,7 @@ async def curate_for_account(
                 reasoning=ai_output["reasoning"],
                 theme=account_config.color_mood,
                 format="story",
-                provider="cli",
+                provider="gemini",
                 source_url=item.url,
                 source=item.source,
             )

@@ -120,7 +120,7 @@ class Content:
         # Remove unknown fields from old database schema (url, etc)
         valid_fields = {
             'id', 'account_type', 'status', 'content_type', 'title', 'body',
-            'image_path', 'reasoning', 'scheduled_time', 'published_at',
+            'image_path', 'output_path', 'reasoning', 'scheduled_time', 'published_at',
             'source_url', 'source', 'platform_status', 'engagement_data',
             'created_at', 'updated_at'
         }

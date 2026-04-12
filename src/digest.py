@@ -48,7 +48,7 @@ def build_digest_input(generations: list[dict[str, Any]]) -> str:
 def generate_digest(
     generations: list[dict[str, Any]],
     days: int = 7,
-    provider: str = "cli",
+    provider: str = "gemini",
 ) -> dict[str, Any]:
     """Synthesize a digest from generation history via AI.
 

@@ -2,8 +2,12 @@
 src/scrapers/pmp_scraper.py - Project management / career news scraper.
 
 Sources:
-  - Harvard Business Review RSS
-  - PMI (Project Management Institute) Blog RSS
+  - Rebel's Guide to PM (Elizabeth Harrin) — practitioner blog, top PM authority
+  - Online PM Courses (Mike Clayton) — educator, 10 PM books author
+  - Fast Company Leadership — workplace / career / leadership
+  - Agile Alliance Blog — agile / scrum / project delivery
+  - HBR Managing People — Harvard Business Review (topic-filtered)
+  - HBR Leadership — Harvard Business Review leadership
 """
 
 from datetime import datetime, timezone
@@ -12,61 +16,53 @@ import feedparser
 
 from src.scrapers.base_scraper import BaseScraper, RawItem
 
-HBR_RSS = "https://feeds.hbr.org/harvardbusiness"
-PMI_RSS = "https://www.pmi.org/blog/rss"
+SOURCES = {
+    "rebel_pm": "https://rebelsguidetopm.com/feed/",
+    "online_pm_courses": "https://onlinepmcourses.com/feed/",
+    "fastcompany_leadership": "https://www.fastcompany.com/work-life/rss",
+    "agile_alliance": "https://www.agilealliance.org/feed/",
+    "hbr_management": "https://hbr.org/topic/subject/managing-people/feed",
+    "hbr_leadership": "https://hbr.org/topic/subject/leadership/feed",
+}
+
+MAX_PER_SOURCE = 6
 
 
 class PMPScraper(BaseScraper):
-    """Scrapes project management and career articles from HBR and PMI."""
+    """Scrapes project management and career content from authority sources."""
 
     def fetch(self) -> list[RawItem]:
         items: list[RawItem] = []
-        items.extend(self._fetch_hbr())
-        items.extend(self._fetch_pmi())
+        for source_id, url in SOURCES.items():
+            items.extend(self._fetch_feed(source_id, url))
         return self.validate_items(items)
 
-    def _fetch_hbr(self) -> list[RawItem]:
+    def _fetch_feed(self, source_id: str, url: str) -> list[RawItem]:
         try:
-            feed = feedparser.parse(HBR_RSS)
+            feed = feedparser.parse(url)
             result = []
-            for entry in feed.entries[:8]:
-                pub = entry.get("published_parsed")
+            for entry in feed.entries[:MAX_PER_SOURCE]:
+                pub = entry.get("published_parsed") or entry.get("updated_parsed")
                 published_at = (
-                    datetime(*pub[:6], tzinfo=timezone.utc) if pub else datetime.now(timezone.utc)
+                    datetime(*pub[:6], tzinfo=timezone.utc)
+                    if pub
+                    else datetime.now(timezone.utc)
+                )
+                summary = (
+                    entry.get("summary", "")
+                    or entry.get("description", "")
+                    or ""
                 )
                 result.append(
                     RawItem(
-                        title=entry.get("title", ""),
+                        title=entry.get("title", "").strip(),
                         url=entry.get("link", ""),
-                        summary=entry.get("summary", "")[:300],
+                        summary=summary[:400],
                         published_at=published_at,
-                        source="hbr",
+                        source=source_id,
                     )
                 )
             return result
         except Exception as exc:
-            print(f"[PMPScraper] HBR RSS error: {exc}")
-            return []
-
-    def _fetch_pmi(self) -> list[RawItem]:
-        try:
-            feed = feedparser.parse(PMI_RSS)
-            result = []
-            for entry in feed.entries[:8]:
-                pub = entry.get("published_parsed")
-                published_at = (
-                    datetime(*pub[:6], tzinfo=timezone.utc) if pub else datetime.now(timezone.utc)
-                )
-                result.append(
-                    RawItem(
-                        title=entry.get("title", ""),
-                        url=entry.get("link", ""),
-                        summary=entry.get("summary", "")[:300],
-                        published_at=published_at,
-                        source="pmi",
-                    )
-                )
-            return result
-        except Exception as exc:
-            print(f"[PMPScraper] PMI RSS error: {exc}")
+            print(f"[PMPScraper] {source_id} error: {exc}")
             return []

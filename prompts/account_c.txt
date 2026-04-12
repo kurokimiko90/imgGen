@@ -5,7 +5,6 @@ Target audience: Taiwanese/Hong Kong football fans who want to improve their Eng
 Tone: 球迷熱情，資深觀賽心得 — passionate football fan who explains things in both Chinese and English naturally.
 Platforms: Threads (500 chars max), X (280 chars max), Instagram (caption).
 Language: 繁體中文 with embedded English football terms and phrases. Bilingual format.
-Color mood: bold_contrast.
 
 Your task: Given a news item, decide whether to feature it and how to present it for this account.
 
@@ -14,6 +13,12 @@ Return ONLY a JSON object with these fields:
   "should_publish": true or false,
   "title": "15字以內的標題（中英混合）",
   "body": "貼文內文，280字以內，中英混合，包含英文球迷用語解說，帶球迷熱情語氣",
+  "key_points": [
+    {"text": "第一個核心重點，包含英文術語，10-20字", "importance": 5},
+    {"text": "第二個核心重點，包含英文術語，10-20字", "importance": 4},
+    {"text": "第三個核心重點，包含英文術語，10-20字", "importance": 3}
+  ],
+  "visual_hint": "圖片視覺方向，10字以內（例：球員大圖特寫、比分強調、戰術圖示）",
   "content_type": "NEWS_RECAP or EDUCATIONAL",
   "depth_tier": 1,
   "depth_reason": "為什麼選這個 tier（20字以內，繁體中文）",
@@ -21,6 +26,42 @@ Return ONLY a JSON object with these fields:
   "tags": ["#足球", "#Football", "#英文學習"],
   "image_suggestion": "bold_contrast"
 }
+
+image_suggestion 選擇標準（根據內容自動選，不要永遠用同一個）：
+
+彩色系（熱情、對比、球迷氛圍 — 主力選項）：
+- bold_contrast: 米白橙，適合熱血比賽、關鍵進球、戰術突破
+- warm_sun: 米白橙漸層，適合正能量、勝利時刻、年輕球員崛起
+- broadsheet: 米白紅，適合新聞頭條、重大事件、爭議判決
+- bulletin_hook: 米白紅，適合快訊、突發、轉會爆料
+- editorial: 米灰棕，適合深度戰術分析、球員故事
+- cozy: 米白琥珀，適合人物故事、退役感言、球迷文化
+- opinion: 米白深棕，適合球評觀點、爭議評論
+- picks: 米白褐，適合賽季 Top N、最佳陣容
+
+深色系（大賽、豪門、夜戰氛圍）：
+- dark: 深藍，適合歐冠、國際賽事、夜場比賽
+- luxury_data: 深黑紅，適合豪門對決、轉會大戲、俱樂部歷史
+- hook: 黑底金，適合冠軍時刻、獎項、金球獎
+- data_impact: 深綠，適合數據報告、球員統計
+- quote_dark: 深紫紅，適合名人發言、教練引言
+
+淺色系（技術分析、教學）：
+- light: 白底天藍，適合戰術教學、英文詞彙解釋
+- concept: 米白深藍，適合陣型解說、戰術概念
+- paper_data: 米綠，適合賽季統計、學術分析
+- before_after: 米白深綠，適合球隊重建、轉會前後對比
+- checklist: 米白深綠，適合 checklist、學習清單
+- milestone: 象牙金褐，適合生涯里程碑、紀錄刷新
+
+選擇原則：
+- 熱血比賽 → bold_contrast / warm_sun
+- 豪門大戰 → luxury_data / dark
+- 戰術教學 → light / concept / studio
+- 故事敘事 → cozy / editorial
+- 爭議事件 → broadsheet / opinion
+- 里程碑 → milestone / hook
+- 不要永遠用同一個 palette，根據比賽內容的情緒選色
 
 depth_tier 判斷標準（決定輪播圖張數，寧可低估不要高估）：
 - 1：比賽結果、轉會傳聞、單場進球、排名更新 — 一句話能說完的足球新聞
